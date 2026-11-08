@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Career Tree</title>
+<style>
+/* ============ THEME (change this, the rendering changes) ============ */
+:root{
+  --bg:#F5F2EB; --ink:#1B1A17; --ink-2:#55524B; --line:#D9D3C7;
+  --panel:#FFFFFF; --trunk:#2A2824; --ground:#CFC7B8;
+  /* branch colours: each clears 6:1 against white text and 5.4:1 against the page, with headroom for projector washout */
+  --b1:#0B6B60; --b2:#3A3DB8; --b3:#AD3A09; --b4:#A3168F; --b5:#1A5FB4; --b6:#7F5D00; --b7:#1E6E33;
+  --ghost:#E6E0D4;
+  --font: "Inter","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --serif: Georgia,"Times New Roman",serif;
+  
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121212; --ink:#F2EFE8; --ink-2:#B5B0A6; --line:#3A3833; --panel:#1E1D1B; --ghost:#262522; --trunk:#E8E2D6; --ground:#4A463F;
+    --b1:#2CC4B0; --b2:#8E92FF; --b3:#FF8A4C; --b4:#F06BDB; --b5:#5AA8FF; --b6:#F2C14E; --b7:#5DD47A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121212; --ink:#F2EFE8; --ink-2:#B5B0A6; --line:#3A3833; --panel:#1E1D1B; --ghost:#262522; --trunk:#E8E2D6; --ground:#4A463F;
+  --b1:#2CC4B0; --b2:#8E92FF; --b3:#FF8A4C; --b4:#F06BDB; --b5:#5AA8FF; --b6:#F2C14E; --b7:#5DD47A;
+}
+/* ============ LAYOUT ============ */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden}
+#stage{position:fixed;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+#stage.dragging{cursor:grabbing}
+header{position:fixed;left:32px;top:24px;pointer-events:none;z-index:2}
+header h1{font-family:var(--serif);font-weight:400;font-size:clamp(26px,2.6vw,44px);margin:0;letter-spacing:-.01em}
+header p{margin:6px 0 0;color:var(--ink-2);font-size:clamp(14px,1.1vw,18px)}
+#legend{position:fixed;left:32px;bottom:22px;display:flex;gap:22px;align-items:center;font-size:15px;color:var(--ink-2);z-index:2;flex-wrap:wrap;max-width:60vw}
+#legend .k{display:flex;align-items:center;gap:8px}
+#legend .dot{border-radius:50%;background:var(--ink-2)}
+#legend .disc{font-size:12px;width:100%;opacity:.8}
+#nav{position:fixed;right:20px;bottom:14px;display:flex;align-items:center;gap:10px;z-index:5;background:var(--bg);padding:6px;border-radius:14px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
+#nav button{font:600 16px var(--font);color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px 18px;cursor:pointer;min-width:96px}
+#nav button:hover:not(:disabled){border-color:var(--ink)}
+#nav button:disabled{opacity:.35;cursor:default}
+#nav #next{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+#counter{font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:56px;text-align:center}
+#controls{position:fixed;right:20px;top:18px;display:flex;gap:8px;z-index:4;transition:opacity .4s}
+body.idle #controls{opacity:0;pointer-events:none}
+#controls select,#controls button{font:14px var(--font);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
+#controls button:hover,#controls select:hover{border-color:var(--ink-2)}
+/* panel */
+#panel{position:fixed;top:0;right:0;height:100%;width:42vw;max-width:760px;background:var(--panel);border-left:1px solid var(--line);
+  transform:translateX(102%);transition:transform .55s cubic-bezier(.2,.7,.2,1);z-index:3;overflow-y:auto;padding:76px 40px 96px}
+#panel.open{transform:none}
+#panel .eyebrow{font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+#panel h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,2.4vw,40px);margin:8px 0 10px;line-height:1.1}
+#panel .sum{font-size:clamp(16px,1.25vw,20px);color:var(--ink-2);margin:0 0 26px;line-height:1.45}
+.card{border:1px solid var(--line);border-left:6px solid var(--c);border-radius:10px;padding:18px 20px;margin-bottom:16px;transition:box-shadow .3s,transform .3s}
+.card.focus{box-shadow:0 0 0 3px var(--c);transform:translateX(-4px)}
+.card h3{margin:0 0 12px;font-size:clamp(18px,1.4vw,23px);display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.card h3 .band{color:var(--c);font-weight:800;white-space:nowrap}
+.card h3 .band small{display:block;font-size:12px;color:var(--ink-2);font-weight:500;text-align:right}
+.card dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0 0 12px;font-size:clamp(14px,1.05vw,17px)}
+.card dt{color:var(--ink-2)} .card dd{margin:0;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:14px;padding:4px 10px;border-radius:99px;border:1.5px solid var(--c);font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.chip img{height:18px;width:auto;max-width:48px;display:none} .chip img.ok{display:block}
+.mark .mono{font-weight:800;pointer-events:none}
+.mark .logo-disc,.mark .logo-img{opacity:0} .mark.haslogo .logo-disc,.mark.haslogo .logo-img{opacity:1} .mark.haslogo .mono{opacity:0}
+.chip i{font-style:normal;color:var(--c);margin-left:6px;font-weight:800}
+#panel .close{position:absolute;right:20px;top:18px;border:none;background:none;font-size:26px;color:var(--ink-2);cursor:pointer}
+/* svg */
+svg text{font-family:var(--font);fill:var(--ink)}
+.g-branch{transition:opacity .6s}
+.ghost path{fill:url(#ghostGr)}
+.g-branch.off{opacity:0;pointer-events:none}
+.g-branch.dim{opacity:.12}
+.limb{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0;transition:stroke-dashoffset 1s cubic-bezier(.3,.6,.2,1)}
+.off .limb{stroke-dashoffset:1}
+.nodes{transition:opacity .5s .7s,transform .5s .7s}
+.off .nodes{opacity:0}
+.bbox{cursor:pointer}
+.bbox text{font-weight:700} .bbox rect{rx:14}
+.sbox{cursor:pointer}
+.sbox rect{fill:var(--panel)}
+.sbox text{font-weight:650}
+.sbox:hover rect,.bbox:hover rect{filter:brightness(1.08)}
+.leaf-lbl{paint-order:stroke;stroke:var(--bg);stroke-width:8px;stroke-linejoin:round;font-weight:600;fill:var(--ink-2);opacity:0;transition:opacity .4s}
+.g-sub{transition:opacity .4s} .subfocus .g-sub{opacity:.18} .subfocus .g-sub.on{opacity:1}  .subfocus .g-sub:not(.on) .leaf-lbl{opacity:0}
+.trunk-lbl{font-family:var(--serif)!important;font-size:46px;fill:var(--ink)}
+#stage{transition:opacity .6s}
+body.focus #stage{opacity:0}
+#focus{position:fixed;left:24px;top:118px;width:calc(58vw - 48px);height:calc(100% - 200px);opacity:0;pointer-events:none;transition:opacity .5s .2s;z-index:1}
+body.focus #focus{opacity:1;pointer-events:auto}
+#focus text{font-family:var(--font);fill:var(--ink)}
+#focus .f-sub{transition:opacity .35s;cursor:pointer}
+#focus.subsel .f-sub{opacity:.18} #focus.subsel .f-sub.on{opacity:1}
+#focus .f-lbl{font-weight:650}
+#focus .f-band{font-weight:800}
+#help{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.35);z-index:9}
+#help.open{display:grid}
+#help div{background:var(--panel);border-radius:14px;padding:28px 34px;font-size:16px;line-height:1.9;max-width:520px}
+#help kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;font:13px var(--font);background:var(--bg)}
+#drop{position:fixed;inset:0;display:none;place-items:center;font-size:28px;background:rgba(0,0,0,.4);color:#fff;z-index:10}
+body.dragover #drop{display:grid}
+</style>
+</head>
+<body>
+<svg id="stage" xmlns="http://www.w3.org/2000/svg"><defs id="defs"></defs><g id="world"></g></svg>
+<svg id="focus" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+<header><h1 id="title"></h1><p id="subtitle"></p></header>
+<div id="legend"></div>
+<nav id="nav" aria-label="Slides"><button id="prev" aria-label="Previous step">‹ Back</button><span id="counter"></span><button id="next" aria-label="Next step">Next ›</button></nav>
+<div id="controls">
+  <select id="dataset" title="Choose discipline"></select>
+  <button id="load" title="Load a JSON data file">Load data</button>
+  <button id="notesBtn" title="Presenter notes (P)">Notes</button>
+  <button id="themeBtn" title="Switch theme (T)"></button>
+  <button id="fsBtn" title="Fullscreen (F)">Fullscreen</button>
+  <button id="helpBtn">?</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</div>
+<aside id="panel"><button class="close" aria-label="Close">×</button><div id="panelBody"></div></aside>
+<div id="help"><div>
+  <b>Presenting</b><br>
+  <kbd>→</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd> next step &nbsp; <kbd>←</kbd> <kbd>PgUp</kbd> back<br>
+  <kbd>1</kbd>–<kbd>9</kbd> jump to branch &nbsp; <kbd>Home</kbd> start &nbsp; <kbd>End</kbd> full tree<br>
+  Click a branch or box to zoom &nbsp; <kbd>Esc</kbd> zoom out<br>
+  Scroll to zoom, drag to pan<br>
+  <kbd>P</kbd> presenter notes window &nbsp; <kbd>F</kbd> fullscreen &nbsp; <kbd>T</kbd> dark / light mode<br>
+  Drop a .json data file anywhere to load it
+</div></div>
+<div id="drop">Drop a Career Tree data file</div>
+
+<!-- DATA LAYER: add or swap files here. Each one pushes a tree into window.CAREER_TREES -->
+<script src="data/ux-india.js"></script>
+<script src="data/industrial-india.js"></script>
+
+<script>
+(() => {
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const svg = $("stage"), world = $("world"), defs = $("defs");
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const rad = d => d * Math.PI / 180;
+
+const S = { trees: window.CAREER_TREES || [], tree: null, steps: [], step: 0, vb: null, home: null, zoomed: null, notesWin: null };
+
+/* ---------- layout: pure function of data ---------- */
+// Sizing knobs. Widths follow the "sum of branches" rule: every company adds UNIT of thickness.
+const F = { branchFont: 42, subFont: 32, leafFont: 30, leafR: [18, 26, 34], unit: 3.4, minSub: 7,
+  branchR: [360, 330], subR: [860, 640], ring: 0.78, trunkH: 400 };
+const boxW = (t, f) => measure(t, f) + f * 1.2;
+function layout(tree) {
+  const GAP = 1.0, A0 = -176, A1 = -4;
+  let t = 0, gi = 0; const slots = [];
+  tree.branches.forEach((b, bi) => { b.children.forEach((c, ci) => slots.push({ b, c, bi, ci, ring: gi++ % 2, pos: t++ })); t += GAP; });
+  const max = t - GAP - 1 || 1;
+  const L = { branches: [] };
+  tree.branches.forEach((b, bi) => {
+    const subs = slots.filter(s => s.bi === bi).map(s => {
+      const a = A0 + (A1 - A0) * s.pos / max, k = s.ring ? F.ring : 1;
+      return { data: s.c, a, w: Math.max(F.minSub, (s.c.companies || []).length * F.unit),
+        x: Math.cos(rad(a)) * F.subR[0] * k, y: Math.sin(rad(a)) * F.subR[1] * k - 40 };
+    });
+    const am = subs.reduce((m, s) => m + s.a, 0) / subs.length, kk = bi % 2 ? 0.82 : 1;
+    L.branches.push({ data: b, idx: bi, a: am, subs, w: subs.reduce((m, s) => m + s.w, 0),
+      x: Math.cos(rad(am)) * F.branchR[0] * kk, y: Math.sin(rad(am)) * F.branchR[1] * kk - 70 });
+  });
+  L.trunk = L.branches.reduce((m, B) => m + B.w, 0);
+  const bItems = L.branches.map(B => ({ n: B, w: boxW(B.data.label, F.branchFont), h: F.branchFont * 1.75 }));
+  relax(bItems, 16);
+  const sItems = L.branches.flatMap(B => B.subs).map(sb => ({ n: sb, w: boxW(sb.data.label, F.subFont), h: F.subFont * 1.75 }));
+  relax([...bItems.map(o => ({ ...o, fixed: 1 })), ...sItems], 24);
+  const fixedBoxes = [...bItems, ...sItems].map(o => ({ ...o, fixed: 1 }));
+  // leaf dots on twigs, then pushed outward so no dot sits on a box or another dot
+  const dots = [];
+  L.branches.forEach(B => B.subs.forEach(sb => {
+    sb.hw = boxW(sb.data.label, F.subFont) / 2; sb.hh = F.subFont * 0.875;
+    const cos = sb.data.companies || [], n = cos.length, spread = Math.min(120, 26 * n);
+    sb.leaves = cos.map((lf, i) => {
+      const deg = sb.a + (n > 1 ? (i / (n - 1) - .5) * spread : 0), cx = Math.cos(rad(deg)), cy = Math.sin(rad(deg));
+      const tEdge = Math.min(sb.hw / Math.max(Math.abs(cx), 1e-3), sb.hh / Math.max(Math.abs(cy), 1e-3));
+      const r = F.leafR[Math.min(F.leafR.length - 1, bandIdx(tree, lf.band || sb.data.band))];
+      const d = tEdge + 22 + r * 1.35 + (i % 2) * r * 1.4;
+      const leaf = { data: lf, a: deg, r, cx, cy, tEdge, x: sb.x + cx * d, y: sb.y + cy * d };
+      dots.push({ n: leaf, w: r * 2.5, h: r * 2.5 });
+      return leaf;
+    });
+  }));
+  relax([...fixedBoxes, ...dots], 6);
+  // labels: placed beside their dot, de-cluttered within the branch (only one branch is labelled at a time)
+  L.branches.forEach(B => {
+    const own = [];
+    B.subs.forEach(sb => sb.leaves.forEach(lf => {
+      const w = measure(lf.data.name, F.leafFont) + 12, h = F.leafFont * 1.25, side = Math.abs(lf.cx) > .5;
+      const lab = { a: lf.a, x: lf.x + (side ? Math.sign(lf.cx) * (lf.r + 8 + w / 2) : 0), y: lf.y + (side ? 0 : Math.sign(lf.cy) * (lf.r + 6 + h / 2)) };
+      lab.x0 = lab.x; lab.y0 = lab.y; lf.lab = lab; own.push({ n: lab, w, h });
+    }));
+    const obst = [bItems[B.idx], ...sItems.filter(o => B.subs.includes(o.n)), ...B.subs.flatMap(sb => sb.leaves.map(l => ({ n: l, w: l.r * 2, h: l.r * 2 })))]
+      .map(o => ({ ...o, fixed: 1 }));
+    relax([...obst, ...own], 6);
+  });
+  return L;
+}
+// tapered limb along a quadratic curve: width w0 at start, w1 at end
+// tapered limb along a quadratic (3 points) or cubic (4 points) curve: width w0 at start, w1 at end
+function bez(P, t) {
+  const u = 1 - t;
+  if (P.length === 3) return {
+    x: u * u * P[0][0] + 2 * u * t * P[1][0] + t * t * P[2][0], y: u * u * P[0][1] + 2 * u * t * P[1][1] + t * t * P[2][1],
+    tx: 2 * u * (P[1][0] - P[0][0]) + 2 * t * (P[2][0] - P[1][0]), ty: 2 * u * (P[1][1] - P[0][1]) + 2 * t * (P[2][1] - P[1][1]) };
+  return {
+    x: u*u*u*P[0][0] + 3*u*u*t*P[1][0] + 3*u*t*t*P[2][0] + t*t*t*P[3][0], y: u*u*u*P[0][1] + 3*u*u*t*P[1][1] + 3*u*t*t*P[2][1] + t*t*t*P[3][1],
+    tx: 3*u*u*(P[1][0]-P[0][0]) + 6*u*t*(P[2][0]-P[1][0]) + 3*t*t*(P[3][0]-P[2][0]), ty: 3*u*u*(P[1][1]-P[0][1]) + 6*u*t*(P[2][1]-P[1][1]) + 3*t*t*(P[3][1]-P[2][1]) };
+}
+function taper(P, w0, w1) {
+  const N = 40, left = [], right = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, b = bez(P, t), len = Math.hypot(b.tx, b.ty) || 1, w = (w0 + (w1 - w0) * t) / 2;
+    left.push([b.x - b.ty / len * w, b.y + b.tx / len * w]); right.push([b.x + b.ty / len * w, b.y - b.tx / len * w]);
+  }
+  const pts = [...left, ...right.reverse()];
+  return "M" + pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join("L") + "Z";
+}
+const pathD = P => `M${P[0]}${P.length === 3 ? "Q" : "C"}${P.slice(1).join(" ")}`;
+let mt, mtree;
+function measure(text, size) {
+  if (!mt) mt = el("text", { visibility: "hidden" }, svg);
+  mt.setAttribute("font-size", size); mt.textContent = text; return mt.getComputedTextLength();
+}
+// push overlapping boxes apart, outward along their own angle (keeps the tree shape)
+function relax(items, margin) {
+  for (let it = 0; it < 400; it++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+      const A = items[i], B = items[j];
+      const ox = (A.w + B.w) / 2 + margin - Math.abs(A.n.x - B.n.x), oy = (A.h + B.h) / 2 + margin - Math.abs(A.n.y - B.n.y);
+      if (ox > 0 && oy > 0) {
+        if (A.fixed && B.fixed) continue;
+        const far = A.fixed ? B : B.fixed ? A : (Math.hypot(A.n.x, A.n.y) >= Math.hypot(B.n.x, B.n.y) ? A : B), a = rad(far.n.a);
+        far.n.x += Math.cos(a) * 8; far.n.y += Math.sin(a) * 8; moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+}
+
+/* ---------- company marks: logo file if present, else a lettered badge ---------- */
+const LOGO = {};
+const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const logoSrcs = co => co.logo ? [co.logo] : [`logos/${slug(co.name)}.svg`, `logos/${slug(co.name)}.png`, `logos/${slug(co.name)}.jpg`];
+// leaf shape pointing along the twig (deg), centred on x,y; size follows r so salary bands stay comparable
+function leafPath(r) {
+  const Lh = r * 1.35, W = r * 1.05;
+  return `M${-Lh},0 C${-Lh * .35},${-W * 1.15} ${Lh * .45},${-W * .95} ${Lh},0 C${Lh * .45},${W * .95} ${-Lh * .35},${W * 1.15} ${-Lh},0 Z`;
+}
+function leafMark(parent, x, y, r, color, co, deg = 0) {
+  const g = el("g", { class: "mark" }, parent);
+  el("path", { d: leafPath(r), transform: `translate(${x},${y}) rotate(${deg})`, fill: color, stroke: "var(--bg)", "stroke-width": 3, "stroke-linejoin": "round" }, g);
+  const t = el("text", { class: "mono", x, y: y + r * .04, "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 1.05 }, g);
+  t.style.fill = textOn(color);
+  t.textContent = (co.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase();
+  el("circle", { class: "logo-disc", cx: x, cy: y, r: r * .82, fill: "#fff" }, g);
+  const sz = r * .82 * 1.42, im = el("image", { class: "logo-img", x: x - sz / 2, y: y - sz / 2, width: sz, height: sz, preserveAspectRatio: "xMidYMid meet" }, g);
+  const key = co.logo || slug(co.name), known = LOGO[key];
+  if (known === null) { im.remove(); return g; }
+  const srcs = known ? [known] : logoSrcs(co); let k = 0;
+  im.addEventListener("load", () => { LOGO[key] = srcs[k]; g.classList.add("haslogo"); });
+  im.addEventListener("error", () => { if (++k < srcs.length) im.setAttribute("href", srcs[k]); else { LOGO[key] = null; im.remove(); } });
+  im.setAttribute("href", srcs[0]);
+  return g;
+}
+function chipLogos(root) {
+  root.querySelectorAll("img[data-n]").forEach(img => {
+    const key = img.dataset.l || slug(img.dataset.n); if (LOGO[key] === null) { img.remove(); return; }
+    const srcs = LOGO[key] ? [LOGO[key]] : logoSrcs({ name: img.dataset.n, logo: img.dataset.l || undefined }); let k = 0;
+    img.onload = () => img.classList.add("ok");
+    img.onerror = () => { if (++k < srcs.length) img.src = srcs[k]; else img.remove(); };
+    img.src = srcs[0];
+  });
+}
+
+/* ---------- render ---------- */
+function bandIdx(tree, id) { const i = tree.bands.findIndex(b => b.id === id); return i < 0 ? 0 : i; }
+function colorOf(b, i) { return `var(--b${(b.color || (i % 7) + 1)})`; }
+function colorVal(b, i) { return css(`--b${(b.color || (i % 7) + 1)}`); }
+
+/* ---------- contrast: pick white or dark text for any fill, whatever the theme's palette ---------- */
+function rgbOf(c) {
+  const v = c.startsWith("var(") ? css(c.slice(4, -1)) : c, cv = document.createElement("canvas").getContext("2d");
+  cv.fillStyle = "#000"; cv.fillStyle = v; const h = cv.fillStyle;
+  if (h.startsWith("#")) return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  return (h.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+}
+function luminance(rgb) { return rgb.map(x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }).reduce((s, x, i) => s + x * [.2126, .7152, .0722][i], 0); }
+const ratio = (a, b) => (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+function textOn(fill) {
+  const L = luminance(rgbOf(fill)), light = "#FFFFFF", dark = "#141311";
+  return ratio(L, 1) >= ratio(L, luminance(rgbOf(dark))) ? light : dark;
+}
+
+function boxed(parent, x, y, text, size, padX, padY, cls, fill, stroke) {
+  const g = el("g", { class: cls, transform: `translate(${x},${y})` }, parent);
+  const r = el("rect", { rx: 10 }, g);
+  const tx = el("text", { "text-anchor": "middle", "dominant-baseline": "central", "font-size": size }, g);
+  tx.textContent = text;
+  const w = tx.getComputedTextLength() + padX * 2, h = size + padY * 2;
+  Object.assign(r.attributes, {});
+  r.setAttribute("x", -w / 2); r.setAttribute("y", -h / 2); r.setAttribute("width", w); r.setAttribute("height", h);
+  if (fill) { r.setAttribute("fill", fill); tx.style.fill = textOn(fill); }
+  if (stroke) { r.setAttribute("stroke", stroke); r.setAttribute("stroke-width", 3); }
+  g._hw = w / 2; g._hh = h / 2;
+  return g;
+}
+
+function render() {
+  const tree = S.tree; world.innerHTML = ""; defs.innerHTML = "";
+  const L = layout(tree);
+  const trunkC = css("--trunk");
+  // ground + trunk: trunk width = sum of all branch widths
+  const ghostL = el("g", { class: "ghost" }, world), limbsL = el("g", {}, world), leavesL = el("g", {}, world), nodesL = el("g", {}, world);
+  const T = L.trunk, H = F.trunkH, base = T * 1.5;
+  el("path", { d: `M${-base * 2.4},${H} Q0,${H - 12} ${base * 2.4},${H}`, stroke: "var(--ground)", "stroke-width": 4, fill: "none", "stroke-linecap": "round" }, limbsL);
+  // the trunk ends where the limbs begin (y0), so the limbs themselves form its top and the gaps between them read as forks
+  const y0 = H * 0.3 - 1;
+  el("path", { fill: "var(--trunk)", d: `M${-T / 2},${y0} C${-T / 2},${H * .55} ${-T * .55},${H * .78} ${-base / 2},${H} L${base / 2},${H} C${T * .55},${H * .78} ${T / 2},${H * .55} ${T / 2},${y0} Z` }, limbsL);
+  // faint outlines fade up from the trunk colour, so unrevealed branches still read as part of the tree
+  const gg = el("linearGradient", { id: "ghostGr", gradientUnits: "userSpaceOnUse", x1: 0, y1: H * 0.3, x2: 0, y2: -200 }, defs);
+  el("stop", { offset: "0", "stop-color": trunkC }, gg); el("stop", { offset: "1", "stop-color": css("--ghost") }, gg);
+  const tl = el("text", { class: "trunk-lbl", "text-anchor": "middle", y: H + 64 }, world); tl.textContent = tree.meta.discipline;
+
+  const limb = (g, id, P, w0, w1, fill) => {
+    const m = el("mask", { id, maskUnits: "userSpaceOnUse", x: -5000, y: -5000, width: 10000, height: 10000 }, g);
+    el("path", { class: "limb", pathLength: 1, d: pathD(P), stroke: "#fff", fill: "none", "stroke-width": w0 + 30 }, m);
+    el("path", { d: taper(P, w0, w1), fill, mask: `url(#${id})` }, g);
+  };
+  let cursor = -T / 2;
+  L.branches.forEach(B => {
+    const b = B.data, c = colorOf(b, B.idx), cv = colorVal(b, B.idx);
+    const g = el("g", { class: "g-branch off", "data-id": b.id }, limbsL);
+    const gl = el("g", { class: "g-branch off", "data-id": b.id }, leavesL);
+    const gn = el("g", { class: "g-branch off", "data-id": b.id }, nodesL);
+    const sx = cursor + B.w / 2; cursor += B.w;
+    const gid = "gr-" + b.id;
+    const lg = el("linearGradient", { id: gid, gradientUnits: "userSpaceOnUse", x1: sx, y1: 0, x2: B.x, y2: B.y }, defs);
+    el("stop", { offset: "0", "stop-color": trunkC }, lg); el("stop", { offset: "1", "stop-color": cv }, lg);
+    // starts inside the trunk and rises vertically, so branches grow out of the trunk with no seam
+    const rise = Math.min(140, Math.abs(B.y) * 0.35), ctrl = [B.x - (B.x - sx) * 0.55, B.y + Math.abs(B.y) * 0.25];
+    const P = [[sx, F.trunkH * 0.3], [sx, -rise], ctrl, [B.x, B.y]];
+    // outermost limbs: a curved fillet under the limb, so it flows out of the trunk edge instead of leaving a shoulder
+    const side = B.idx === 0 ? -1 : B.idx === L.branches.length - 1 ? 1 : 0;
+    if (side) {
+      const t = 0.34, q = bez(P, t), len = Math.hypot(q.tx, q.ty) || 1, w = B.w * (1 - 0.15 * t) / 2;
+      let nx = -q.ty / len, ny = q.tx / len; if (Math.sign(nx) !== side) { nx = -nx; ny = -ny; }
+      const E = [q.x + nx * w, q.y + ny * w], S0 = [side * T / 2 * 1.02, F.trunkH * 0.35];
+      el("path", { d: `M${S0}Q${side * T / 2},${E[1]} ${E}L${q.x},${q.y}L${sx},${F.trunkH * 0.3}Z`, fill: `url(#${gid})` }, g);
+    }
+    el("path", { d: taper(P, B.w, B.w * 0.85) }, ghostL);
+    limb(g, "m-" + b.id, P, B.w, B.w * 0.85, `url(#${gid})`);
+    // sub-limbs leave the branch end side by side, ordered like the sub-branches
+    let tx = B.x - ctrl[0], ty = B.y - ctrl[1]; const tl2 = Math.hypot(tx, ty) || 1; tx /= tl2; ty /= tl2;
+    let off = -B.w * 0.85 / 2;
+    [...B.subs].sort((p, q) => p.a - q.a).forEach(sb => {
+      const ww = sb.w * 0.85, o = off + ww / 2; off += ww;
+      const s0 = [B.x - ty * o, B.y + tx * o];
+      limb(g, "m-" + b.id + "-" + sb.data.id, [s0, [s0[0] + tx * 90, s0[1] + ty * 90], [sb.x, sb.y]], ww, Math.max(3, ww * 0.55), c);
+    });
+    const nodes = el("g", { class: "nodes" }, gn), lnodes = el("g", { class: "nodes" }, gl);
+    B.subs.forEach(sb => {
+      const d = sb.data, sg = el("g", { class: "g-sub", "data-id": d.id }, lnodes), sgb = el("g", { class: "g-sub", "data-id": d.id }, nodes);
+      const box = boxed(sgb, sb.x, sb.y, d.label, F.subFont, F.subFont * .6, F.subFont * .375, "sbox", null, c);
+      box.addEventListener("click", e => { e.stopPropagation(); zoomTo(b.id, d.id); });
+      sb.leaves.forEach(lf => {
+        el("line", { x1: sb.x + lf.cx * lf.tEdge, y1: sb.y + lf.cy * lf.tEdge, x2: lf.x, y2: lf.y, stroke: c, "stroke-width": F.unit * 1.3, "stroke-linecap": "round" }, sg);
+        if (Math.hypot(lf.lab.x - lf.lab.x0, lf.lab.y - lf.lab.y0) > 14)
+          el("line", { class: "leaf-lbl", x1: lf.x, y1: lf.y, x2: lf.lab.x, y2: lf.lab.y, style: `stroke:${c}`, "stroke-dasharray": "5 5" }, sg);
+        leafMark(sg, lf.x, lf.y, lf.r, c, lf.data, lf.a);
+        const lt = el("text", { class: "leaf-lbl", x: lf.lab.x, y: lf.lab.y, "text-anchor": "middle", "dominant-baseline": "central", "font-size": F.leafFont }, sg);
+        lt.textContent = lf.data.name + (lf.data.band && lf.data.band !== d.band ? ` ${lf.data.band}` : "");
+      });
+    });
+    const bb = boxed(nodes, B.x, B.y, b.label, F.branchFont, F.branchFont * .55, F.branchFont * .375, "bbox", c);
+    bb.addEventListener("click", e => { e.stopPropagation(); zoomTo(b.id); });
+  });
+
+  // chrome
+  $("title").textContent = tree.meta.title;
+  $("subtitle").textContent = [tree.meta.subtitle, tree.meta.asOf].filter(Boolean).join(" · ");
+  $("legend").innerHTML = tree.bands.map((bd, i) => `<span class="k">${(r => `<svg width="${r * 2.9}" height="${r * 2.3}" viewBox="${-r * 1.45} ${-r * 1.15} ${r * 2.9} ${r * 2.3}"><path d="${leafPath(r)}" transform="rotate(-18)" fill="var(--ink-2)"/></svg>`)(F.leafR[Math.min(i, F.leafR.length - 1)] * .45)}<b>${bd.id}</b> ${bd.range}</span>`).join("")
+    + (tree.meta.disclaimer ? `<span class="disc">${tree.meta.disclaimer}</span>` : "");
+
+  const box = world.getBBox();
+  S.home = fitBox(box, 1, 0.015, 118, 64);
+  setVB(S.home);
+}
+
+/* ---------- close-up view of one branch: branch, sub-branches, one row per company ---------- */
+function renderFocus(bid, sid) {
+  const tree = S.tree, bi = tree.branches.findIndex(b => b.id === bid), b = tree.branches[bi];
+  const fs = $("focus"); fs.innerHTML = "";
+  const c = colorOf(b, bi), ROW = 72, GAP = 34, LF = 30, SF = 30, BF = 38;
+  const rIdx = co => Math.min(2, bandIdx(tree, co.band));
+  const R = [17, 24, 31];
+  const subW = Math.max(...b.children.map(ch => measure(ch.label, SF))) + SF * 1.2;
+  const bw = measure(b.label, BF) + BF * 1.1;
+  const subLeft = bw + 150, dotX = subLeft + subW + 150;
+  let y = 0; const rows = b.children.map(ch => {
+    const cos = ch.companies && ch.companies.length ? ch.companies : [{ name: "" }];
+    const top = y, h = cos.length * ROW; y += h + GAP;
+    return { ch, cy: top + h / 2, leaves: cos.map((co, i) => ({ co, y: top + ROW * (i + .5), r: R[rIdx({ band: co.band || ch.band })] })) };
+  });
+  const total = y - GAP, by = total / 2;
+  const limbs = el("g", {}, fs), nodes = el("g", {}, fs);
+  const wsum = rows.reduce((m, r) => m + Math.max(F.minSub, r.leaves.length * F.unit * 1.6), 0);
+  let off = -wsum / 2;
+  rows.forEach(r => {
+    const g = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, nodes);
+    const lg = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, limbs);
+    const ww = Math.max(F.minSub, r.leaves.length * F.unit * 1.6), o = off + ww / 2; off += ww;
+    el("path", { d: taper([[bw - 10, by + o], [bw + 110, r.cy], [subLeft + 4, r.cy]], ww, Math.max(4, ww * .6)), fill: c }, lg);
+    const x0 = subLeft + subW;
+    r.leaves.forEach(lf => {
+      if (!lf.co.name) return;
+      el("path", { d: `M${x0},${r.cy} C${x0 + 80},${r.cy} ${dotX - 80},${lf.y} ${dotX},${lf.y}`, fill: "none", stroke: c, "stroke-width": 3.5, "stroke-linecap": "round" }, lg);
+      leafMark(g, dotX, lf.y, lf.r, c, lf.co, -18);
+      const t = el("text", { class: "f-lbl", x: dotX + 58, y: lf.y, "dominant-baseline": "central", "font-size": LF }, g);
+      t.textContent = lf.co.name;
+      if (lf.co.band && lf.co.band !== r.ch.band) { const bt = el("tspan", { class: "f-band", dx: 12, fill: c }, t); bt.textContent = lf.co.band; }
+    });
+    const box = boxed(g, subLeft + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
+    box.querySelector("rect").setAttribute("fill", "var(--panel)");
+    g.onclick = e => { e.stopPropagation(); zoomTo(bid, r.ch.id); };
+  });
+  boxed(nodes, bw / 2, by, b.label, BF, BF * .55, BF * .38, "bbox", c);
+  fs.classList.toggle("subsel", !!sid);
+  const bb = fs.getBBox ? null : null;
+  const box = nodes.getBBox(), lb = limbs.getBBox();
+  const x0 = Math.min(box.x, lb.x) - 20, y0 = Math.min(box.y, lb.y) - 20, x1 = Math.max(box.x + box.width, lb.x + lb.width) + 20, y1 = Math.max(box.y + box.height, lb.y + lb.height) + 20;
+  fs.setAttribute("viewBox", `${x0} ${y0} ${x1 - x0} ${y1 - y0}`);
+}
+$("focus").addEventListener("click", () => zoomOut());
+
+/* ---------- steps ---------- */
+function buildSteps(tree) {
+  if (tree.steps && tree.steps.length) return [{ view: "intro" }, ...tree.steps];
+  const s = [{ view: "intro", notes: tree.meta.notes || `Introduce the ${tree.meta.discipline} tree. ${tree.meta.disclaimer || ""}` }];
+  tree.branches.forEach(b => { s.push({ branch: b.id, view: "reveal" }); s.push({ branch: b.id, view: "detail" }); });
+  s.push({ view: "overview", notes: "Full tree. Invite questions, click any branch to revisit." });
+  return s;
+}
+function revealedUpTo(i) {
+  const set = new Set();
+  S.steps.slice(0, i + 1).forEach(st => st.branch && set.add(st.branch));
+  if (S.steps[i].view === "overview") S.tree.branches.forEach(b => set.add(b.id));
+  return set;
+}
+function go(i) {
+  i = Math.max(0, Math.min(S.steps.length - 1, i)); S.step = i;
+  const st = S.steps[i], open = revealedUpTo(i);
+  world.querySelectorAll(".g-branch").forEach(g => {
+    g.classList.toggle("off", !open.has(g.dataset.id));
+    g.classList.toggle("dim", st.view === "reveal" && open.has(g.dataset.id) && g.dataset.id !== st.branch);
+  });
+  if (st.view === "detail") zoomTo(st.branch, null, true); else zoomOut(true);
+  $("counter").textContent = `${i + 1} / ${S.steps.length}`;
+  $("prev").disabled = i === 0; $("next").disabled = i === S.steps.length - 1;
+  updateNotes();
+}
+const branchById = id => S.tree.branches.find(b => b.id === id);
+function stepTitle(st) { if (!st) return "End"; if (st.view === "intro") return "Intro: " + S.tree.meta.discipline; if (st.view === "overview") return "Full tree"; const b = branchById(st.branch); return (b ? b.label : st.branch) + (st.view === "detail" ? " (detail)" : ""); }
+function stepNotes(st) { if (st.notes) return st.notes; const b = branchById(st.branch) || {}; return st.view === "detail" ? (b.detailNotes || b.notes || "") : (b.notes || b.summary || ""); }
+
+/* ---------- zoom / viewBox ---------- */
+function fitBox(b, frac, padFrac, top = 0, bottom = 0) {
+  const W = innerWidth, availW = W * frac, availH = innerHeight - top - bottom;
+  const pw = b.width * (1 + padFrac * 2), ph = b.height * (1 + padFrac * 2);
+  const s = Math.min(availW / pw, availH / ph), cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  return { x: cx - (availW / 2) / s, y: cy - (top + availH / 2) / s, w: W / s, h: innerHeight / s };
+}
+function setVB(v) { S.vb = v; svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`); }
+let anim;
+function animVB(to, ms = 750) {
+  cancelAnimationFrame(anim); const from = { ...S.vb }, t0 = performance.now();
+  const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const tick = now => { const t = Math.min(1, (now - t0) / ms), e = ease(t);
+    setVB({ x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, w: from.w + (to.w - from.w) * e, h: from.h + (to.h - from.h) * e });
+    if (t < 1) anim = requestAnimationFrame(tick); };
+  anim = requestAnimationFrame(tick);
+}
+function zoomTo(bid, sid, fromStep) {
+  const gs = [...world.querySelectorAll(`.g-branch[data-id="${bid}"]`)]; if (!gs.length || gs[0].classList.contains("off")) return;
+  world.querySelectorAll(".g-branch").forEach(x => { x.classList.remove("subfocus"); if (!x.classList.contains("off")) x.classList.toggle("dim", x.dataset.id !== bid); });
+  world.querySelectorAll(".g-branch").forEach(x => x.classList.remove("zoomed"));
+  gs.forEach(g => { g.classList.add("zoomed"); g.classList.toggle("subfocus", !!sid);
+    g.querySelectorAll(".g-sub").forEach(x => x.classList.toggle("on", x.dataset.id === sid)); });
+  const parts = gs.slice(1).map(g => sid ? g.querySelector(`.g-sub[data-id="${sid}"]`) : g.querySelector(".nodes")).filter(Boolean).map(x => x.getBBox());
+  const x0 = Math.min(...parts.map(b => b.x)), y0 = Math.min(...parts.map(b => b.y)), x1 = Math.max(...parts.map(b => b.x + b.width)), y1 = Math.max(...parts.map(b => b.y + b.height));
+  // no camera move: the tree stays still and fades, the close-up fades in
+  S.zoomed = bid; openPanel(bid, sid);
+  renderFocus(bid, sid); document.body.classList.add("focus");
+}
+function zoomOut(fromStep) {
+  S.zoomed = null; $("panel").classList.remove("open"); document.body.classList.remove("focus");
+  const st = S.steps[S.step];
+  world.querySelectorAll(".g-branch").forEach(g => { g.classList.remove("subfocus", "zoomed");
+    g.classList.toggle("dim", st.view === "reveal" && !g.classList.contains("off") && g.dataset.id !== st.branch); });
+  animVB(S.home);
+}
+function openPanel(bid, sid) {
+  const tree = S.tree, bi = tree.branches.findIndex(b => b.id === bid), b = tree.branches[bi], c = colorOf(b, bi);
+  const band = id => tree.bands.find(x => x.id === id) || { range: "" };
+  $("panelBody").innerHTML = `<div class="eyebrow" style="color:${c}">${tree.meta.discipline} · Branch ${bi + 1}</div>
+    <h2>${b.label}</h2><p class="sum">${b.summary || ""}</p>` +
+    b.children.map(ch => `<div class="card ${ch.id === sid ? "focus" : ""}" data-id="${ch.id}" style="--c:${c}">
+      <h3><span>${ch.label}</span><span class="band">${ch.band || ""}<small>${band(ch.band).range}</small></span></h3>
+      <dl>${tree.attributes.filter(a => ch[a.key]).map(a => `<dt>${a.label}</dt><dd>${ch[a.key]}</dd>`).join("")}</dl>
+      <div class="chips">${(ch.companies || []).map(co => `<span class="chip"><img alt="" data-n="${co.name}" data-l="${co.logo || ""}">${co.name}${co.band && co.band !== ch.band ? `<i>${co.band}</i>` : ""}</span>`).join("")}</div>
+    </div>`).join("");
+  chipLogos($("panelBody"));
+  $("panel").classList.add("open");
+  $("panelBody").querySelectorAll(".card").forEach(cd => cd.onclick = () => zoomTo(bid, cd.dataset.id));
+  if (sid) { const f = $("panelBody").querySelector(".card.focus"); f && f.scrollIntoView({ block: "center", behavior: "smooth" }); }
+  else $("panel").scrollTop = 0;
+}
+
+/* ---------- presenter notes window ---------- */
+function openNotes() {
+  S.notesWin = window.open("", "ct-notes", "width=560,height=720");
+  if (!S.notesWin) return alertish("Allow pop-ups to open presenter notes");
+  const d = S.notesWin.document;
+  d.open(); d.write(`<title>Presenter notes</title><body style="font:20px/1.5 ${css("--font").replace(/"/g, "'")};margin:28px;background:#111;color:#eee">
+    <div id="c" style="color:#999;font-size:15px"></div><h2 id="t" style="margin:6px 0 14px"></h2><div id="n"></div>
+    <hr style="border-color:#333;margin:24px 0"><div style="color:#999;font-size:15px">Next: <span id="x"></span></div></body>`); d.close();
+  d.addEventListener("keydown", onKey);
+  updateNotes();
+}
+function updateNotes() {
+  const w = S.notesWin; if (!w || w.closed) return;
+  const st = S.steps[S.step], d = w.document;
+  d.getElementById("c").textContent = `Step ${S.step + 1} / ${S.steps.length}`;
+  d.getElementById("t").textContent = stepTitle(st);
+  d.getElementById("n").textContent = stepNotes(st);
+  d.getElementById("x").textContent = stepTitle(S.steps[S.step + 1]);
+}
+function alertish(msg) { $("counter").textContent = msg; }
+
+/* ---------- data loading ---------- */
+function useTree(tree) {
+  if (!tree || !tree.branches) return alertish("Not a Career Tree data file");
+  S.tree = tree; S.steps = buildSteps(tree); render(); go(0);
+}
+function fillDatasets() {
+  $("dataset").innerHTML = S.trees.map((t, i) => `<option value="${i}">${t.meta.discipline} · ${t.meta.region || ""}</option>`).join("");
+}
+function addTree(t) { S.trees.push(t); fillDatasets(); $("dataset").value = S.trees.length - 1; useTree(t); }
+function readFile(f) { const r = new FileReader(); r.onload = () => { try { addTree(JSON.parse(r.result)); } catch (e) { alertish("Could not read JSON: " + e.message); } }; r.readAsText(f); }
+
+/* ---------- input ---------- */
+function onKey(e) {
+  if (e.target.tagName === "SELECT") return;
+  const k = e.key;
+  if (["ArrowRight", " ", "PageDown", "Enter", "ArrowDown"].includes(k)) { e.preventDefault(); go(S.step + 1); }
+  else if (["ArrowLeft", "PageUp", "Backspace", "ArrowUp"].includes(k)) { e.preventDefault(); go(S.step - 1); }
+  else if (k === "Home") go(0);
+  else if (k === "End") go(S.steps.length - 1);
+  else if (k === "Escape") { $("help").classList.remove("open"); zoomOut(); }
+  else if (/^[1-9]$/.test(k)) { const idx = S.steps.findIndex(s => s.branch === (S.tree.branches[+k - 1] || {}).id); if (idx >= 0) go(idx); }
+  else if (k === "f" || k === "F") toggleFS();
+  else if (k === "p" || k === "P") openNotes();
+  else if (k === "t" || k === "T") toggleTheme();
+  else if (k === "?") $("help").classList.toggle("open");
+}
+function toggleFS() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
+function themeLabel() { $("themeBtn").textContent = document.documentElement.dataset.theme === "dark" ? "☀ Light mode" : "☾ Dark mode"; }
+function toggleTheme() {
+  const h = document.documentElement; h.dataset.theme = h.dataset.theme === "dark" ? "light" : "dark"; themeLabel();
+  // text colours are chosen per theme, so redraw everything, including an open close-up
+  const s = S.step, z = S.zoomed; $("focus").innerHTML = ""; render(); go(s); if (z && !S.zoomed) zoomTo(z);
+}
+document.addEventListener("keydown", onKey);
+// on-screen Back / Next: blur after click so Space or Enter on the keyboard never triggers a second step
+$("prev").onclick = e => { e.currentTarget.blur(); go(S.step - 1); };
+$("next").onclick = e => { e.currentTarget.blur(); go(S.step + 1); };
+$("dataset").onchange = e => useTree(S.trees[+e.target.value]);
+$("load").onclick = () => $("file").click();
+$("file").onchange = e => e.target.files[0] && readFile(e.target.files[0]);
+$("notesBtn").onclick = openNotes; $("themeBtn").onclick = toggleTheme; $("fsBtn").onclick = toggleFS;
+$("helpBtn").onclick = () => $("help").classList.toggle("open"); $("help").onclick = () => $("help").classList.remove("open");
+document.querySelector("#panel .close").onclick = () => zoomOut();
+addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("dragover"); });
+addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("dragover"); });
+addEventListener("drop", e => { e.preventDefault(); document.body.classList.remove("dragover"); e.dataTransfer.files[0] && readFile(e.dataTransfer.files[0]); });
+
+// wheel zoom + drag pan
+svg.addEventListener("wheel", e => { e.preventDefault(); cancelAnimationFrame(anim);
+  const f = Math.exp(e.deltaY * 0.0015), v = S.vb, r = svg.getBoundingClientRect();
+  const px = v.x + (e.clientX - r.left) / r.width * v.w, py = v.y + (e.clientY - r.top) / r.height * v.h;
+  setVB({ x: px - (px - v.x) * f, y: py - (py - v.y) * f, w: v.w * f, h: v.h * f }); }, { passive: false });
+let drag = null;
+svg.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY, vb: { ...S.vb }, moved: false }; });
+addEventListener("pointermove", e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; svg.classList.add("dragging"); }
+  if (drag.moved) { const s = S.vb.w / innerWidth; setVB({ ...drag.vb, x: drag.vb.x - dx * s, y: drag.vb.y - dy * s }); } });
+addEventListener("pointerup", () => { svg.classList.remove("dragging"); setTimeout(() => drag = null, 0); });
+svg.addEventListener("click", () => { if (drag && drag.moved) return; if (S.zoomed) zoomOut(); });
+addEventListener("resize", () => { const s = S.step; render(); go(s); });
+
+// hide controls when mouse is idle (clean projection)
+let idleT; const wake = () => { document.body.classList.remove("idle"); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add("idle"), 2500); };
+addEventListener("mousemove", wake); wake();
+
+// Bugbox: shared feedback button (https://github.com/smkarmarkar/bugbox); each note records where in the tree it was sent from
+document.addEventListener("DOMContentLoaded", () => {
+  if (!window.Bugbox) return;
+  Bugbox.init({ app: "career-tree", context: () => {
+    const st = S.steps[S.step] || {};
+    return { discipline: S.tree && S.tree.meta ? S.tree.meta.discipline + " · " + (S.tree.meta.region || "") : "",
+      step: (S.step + 1) + " / " + S.steps.length, title: st ? stepTitle(st) : "", closeUp: S.zoomed || null,
+      theme: document.documentElement.dataset.theme };
+  } });
+});
+
+if (!S.trees.length) { alertish("No data files found in /data"); return; }
+themeLabel(); fillDatasets(); useTree(S.trees[0]);
+})();
+</script>
+<script src="https://smkarmarkar.github.io/bugbox/bugbox.js" defer></script>
+</body>
+</html>
