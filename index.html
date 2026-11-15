@@ -125,11 +125,11 @@ svg text{font-family:var(--font);fill:var(--ink)}
 /* Reveal sequence for a branch: 1 main limb grows from the trunk, 2 branch label appears at its tip,
    3 sub-limbs grow from the branch label, 4 sub-branch labels appear, 5 leaves appear. Hiding is instant. */
 .limb{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}
-.limb.main{transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1) var(--rd,0s)}
-.limb.sub{transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1) calc(var(--rd,0s) + 1.05s)}
-.n-branch{transition:opacity .3s calc(var(--rd,0s) + .85s)}
-.n-sub{transition:opacity .3s calc(var(--rd,0s) + 1.8s)}
-.n-leaf{transition:opacity .45s calc(var(--rd,0s) + 2.05s)}
+.limb.main{transition:stroke-dashoffset .45s cubic-bezier(.4,0,.2,1) var(--rd,0s)}
+.limb.sub{transition:stroke-dashoffset .4s cubic-bezier(.4,0,.2,1) calc(var(--rd,0s) + .525s)}
+.n-branch{transition:opacity .15s calc(var(--rd,0s) + .425s)}
+.n-sub{transition:opacity .15s calc(var(--rd,0s) + .9s)}
+.n-leaf{transition:opacity .225s calc(var(--rd,0s) + 1.025s)}
 .off .limb,.off .limb.main,.off .limb.sub{stroke-dashoffset:1;transition:none}
 .off .n-branch,.off .n-sub,.off .n-leaf{opacity:0;transition:none}
 .bbox{cursor:pointer}
