@@ -172,7 +172,6 @@ body.forest #forest .ft{opacity:1;transform:none;transition-delay:var(--d)}
 #forest .ft-name{font-weight:700;letter-spacing:-.02em;paint-order:stroke;stroke:var(--bg);stroke-width:10px;stroke-linejoin:round}
 #forest .ft-name.back{font-weight:600;fill:var(--ink-2)} body.forest #forest .ft-name.back{opacity:.9}
 #forest .back{opacity:.55} body.forest #forest .ft.back{opacity:.55}
-#forest .you{font-weight:600;fill:var(--ink-2);paint-order:stroke;stroke:var(--bg);stroke-width:10px}
 </style>
 </head>
 <body>
@@ -600,11 +599,14 @@ function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls) {
   const R = seeded(name), c = `var(--b${hue})`, g = el("g", { class: "ft " + cls, style: `--d:${delay}s` }, parent);
   const h = 190 * s, bw = 84 * s, tw = 52 * s, top = gy - h;
   const n = 5 + Math.floor(R() * 3), limbs = el("g", {}, g), leaves = el("g", {}, g);
+  // limbs fade from the trunk colour into the discipline colour, like the main tree
+  const gid = "fg-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), lg = el("linearGradient", { id: gid, gradientUnits: "userSpaceOnUse", x1: 0, y1: top + 30 * s, x2: 0, y2: top - 130 * s }, g);
+  el("stop", { offset: "0", style: "stop-color:var(--trunk)" }, lg); el("stop", { offset: "1", style: `stop-color:${c}` }, lg);
   for (let i = 0; i < n; i++) {
     const t = i / (n - 1), a = rad(-155 + t * 130 + (R() - .5) * 10);
     const len = s * 250 * (.6 + .5 * Math.sin(t * Math.PI)) * (.9 + R() * .2), w = tw / n * 1.6;
     const sx = cx - tw / 2 + tw * (i + .5) / n, S0 = [sx, top + 30 * s], E = [sx + Math.cos(a) * len, top + Math.sin(a) * len];
-    el("path", { fill: c, d: taper([S0, [sx, top - len * .5], E], w, w * .45) }, limbs);
+    el("path", { fill: `url(#${gid})`, d: taper([S0, [sx, top - len * .5], E], w, w * .45) }, limbs);
     const k = 2 + Math.floor(R() * 2);
     for (let j = 0; j < k; j++) {
       const b = a + rad((j - (k - 1) / 2) * 32 + (R() - .5) * 10), l = s * (40 + R() * 28), r = s * (11 + R() * 8);
@@ -626,11 +628,6 @@ function renderForest() {
   const bk = FOREST.back.length, fr = FOREST.front.length;
   FOREST.back.forEach(([n, h], i) => forestTree(backG, labels, n, h, W * (i + .5) / bk, 560, .7, .15 + i * .08, "back"));
   FOREST.front.forEach(([n, h], i) => forestTree(frontG, labels, n, h, W * (i + .5) / fr, 1180, 1, .6 + i * .1, ""));
-  // the individual, standing in the clearing between two trees
-  const p = el("g", { class: "ft", style: "--d:1.3s" }, f), px = W * 3 / fr, py = 1180;
-  el("circle", { cx: px, cy: py - 100, r: 17, fill: "var(--ink)" }, p);
-  el("path", { d: `M${px - 23},${py} L${px - 18},${py - 56} Q${px},${py - 82} ${px + 18},${py - 56} L${px + 23},${py} Z`, fill: "var(--ink)" }, p);
-  const y = el("text", { class: "you", x: px, y: py + 40, "text-anchor": "middle", "font-size": 26 }, labels); y.textContent = "You";
   const bb = f.getBBox(), pad = 20; f.setAttribute("viewBox", `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
 }
 function revealedUpTo(i) {
