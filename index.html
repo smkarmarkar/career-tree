@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-style="default">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Design Career Tree</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ============ THEME: shadcn/ui, "stone" base colour (hex equivalents of its oklch tokens) ============
    Two deliberate departures, both for projection in a bright room:
@@ -39,6 +39,35 @@
   --trunk:#E7E5E4; --ground:#44403C; --ghost:#292524; --tablist:#292524;
   --b1:#2CC4B0; --b2:#8E92FF; --b3:#FF8A4C; --b4:#F06BDB; --b5:#5AA8FF; --b6:#F2C14E; --b7:#5DD47A;
 }
+/* ============ THEME 1 "Signal": near-black canvas, one yellow accent, pill nodes, notched buttons ============
+   Dark only. Every branch uses the same yellow; branches not in focus turn grey instead of fading out. */
+html:root[data-style="signal"]{
+  --background:#0E0E0E; --foreground:#F4F2EA; --primary:#FFE47A; --primary-foreground:#141311;
+  --muted:#1F1F1F; --muted-foreground:#9A9A9A; --accent:#232323; --border:#2A2A2A; --ring:#FFE47A;
+  --bg:#0E0E0E; --ink:#F4F2EA; --ink-2:#9A9A9A; --line:#2A2A2A; --panel:#151515;
+  --trunk:#D9D5CA; --ground:#2E2E2E; --ghost:#262626; --tablist:#1F1F1F;
+  --b1:#FFE47A; --b2:#FFE47A; --b3:#FFE47A; --b4:#FFE47A; --b5:#FFE47A; --b6:#FFE47A; --b7:#FFE47A;
+  --shadow-xs:none; --shadow-sm:none; --shadow-lg:none; --radius:8px;
+  --font:"Inter","Geist",ui-sans-serif,system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
+  color-scheme:dark;
+}
+[data-style="signal"] header h1,[data-style="signal"] #panel h2{font-weight:800;letter-spacing:-.045em}
+[data-style="signal"] header{left:58px;top:30px}
+/* line drawing: hairline limbs from one point on a narrow trunk, dots for sub-branches, plain text labels */
+.ln-b text{font-weight:700;letter-spacing:-.02em;paint-order:stroke;stroke:var(--bg);stroke-width:12px;stroke-linejoin:round}
+.ln-b .ln-no{font-weight:600;letter-spacing:.12em;fill:var(--ink-2)}
+.ln-s text{font-weight:500;paint-order:stroke;stroke:var(--bg);stroke-width:10px;stroke-linejoin:round}
+.ln-b,.ln-s{cursor:pointer} .ln-s:hover circle{stroke:var(--ink);stroke-width:4px}
+[data-style="signal"] .g-branch.dim{opacity:.5;filter:saturate(0) brightness(.75)}
+[data-style="signal"] #nav{background:none;border:0;box-shadow:none;padding:0;gap:12px}
+[data-style="signal"] #nav button{height:48px;min-width:104px;font-weight:700;font-size:16px;border:0;border-radius:2px;
+  background:#2A2A2A;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,0 100%)}
+[data-style="signal"] #nav #next{background:var(--primary);color:var(--primary-foreground)}
+[data-style="signal"] #nav #next:hover:not(:disabled){background:#FFEC9E}
+[data-style="signal"] #panel{border-left-color:var(--line)}
+[data-style="signal"] .card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:20px 0}
+[data-style="signal"] .card.focus{box-shadow:inset 3px 0 0 var(--c);padding-left:16px}
+[data-style="signal"] #themeBtn{display:none}
 /* ============ BASE ============ */
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-font-smoothing:antialiased}
@@ -184,6 +213,7 @@ body.forest #forest .ft.bush{transform:none;transition:opacity .5s var(--d),tran
 <nav id="nav" aria-label="Slides"><button id="prev" aria-label="Previous step">‹ Back</button><span id="counter"></span><button id="next" aria-label="Next step">Next ›</button></nav>
 <div id="controls">
   <select id="dataset" title="Choose discipline"></select>
+  <select id="style" title="Choose theme" aria-label="Theme"><option value="default">Default theme</option><option value="signal">Theme 1 · Signal</option></select>
   <button id="notesBtn" title="Presenter notes (P)">Notes</button>
   <button id="themeBtn" class="icon" title="Switch theme (T)"></button>
   <button id="fsBtn" class="icon" title="Fullscreen (F)" aria-label="Fullscreen"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
@@ -456,8 +486,9 @@ function render() {
   const T = L.trunk, H = F.trunkH, base = T * 1.5;
   el("path", { d: `M${-base * 2.4},${H} Q0,${H - 12} ${base * 2.4},${H}`, stroke: "var(--ground)", "stroke-width": 4, fill: "none", "stroke-linecap": "round" }, limbsL);
   // the trunk ends where the limbs begin (y0), so the limbs themselves form its top and the gaps between them read as forks
-  const y0 = H * 0.3 - 1;
-  el("path", { fill: "var(--trunk)", d: `M${-T / 2},${y0} C${-T / 2},${H * .55} ${-T * .55},${H * .78} ${-base / 2},${H} L${base / 2},${H} C${T * .55},${H * .78} ${T / 2},${H * .55} ${T / 2},${y0} Z` }, limbsL);
+  const y0 = H * 0.3 - 1, LN = document.documentElement.dataset.style === "signal";
+  if (LN) el("path", { fill: "var(--trunk)", d: `M-7,${y0} L${-base * .2},${H} L${base * .2},${H} L7,${y0} Z` }, limbsL);
+  else el("path", { fill: "var(--trunk)", d: `M${-T / 2},${y0} C${-T / 2},${H * .55} ${-T * .55},${H * .78} ${-base / 2},${H} L${base / 2},${H} C${T * .55},${H * .78} ${T / 2},${H * .55} ${T / 2},${y0} Z` }, limbsL);
   // faint outlines fade up from the trunk colour, so unrevealed branches still read as part of the tree
   const gg = el("linearGradient", { id: "ghostGr", gradientUnits: "userSpaceOnUse", x1: 0, y1: 40, x2: 0, y2: -15 }, defs);
   el("stop", { offset: "0", "stop-color": trunkC }, gg); el("stop", { offset: "1", "stop-color": trunkC, "stop-opacity": 0 }, gg);
@@ -481,6 +512,7 @@ function render() {
     // starts inside the trunk and rises vertically, so branches grow out of the trunk with no seam
     const rise = Math.min(140, Math.abs(B.y) * 0.35), ctrl = [B.x - (B.x - sx) * 0.55, B.y + Math.abs(B.y) * 0.25];
     const P = [[sx, F.trunkH * 0.3], [sx, -rise], ctrl, [B.x, B.y]];
+    if (LN) { lineBranch(B, b, c, g, gl, gn, y0); return; }
     // outermost limbs: a curved fillet under the limb, so it flows out of the trunk edge instead of leaving a shoulder
     const side = B.idx === 0 ? -1 : B.idx === L.branches.length - 1 ? 1 : 0;
     if (side) {
@@ -534,6 +566,41 @@ function render() {
   setVB(S.home);
 }
 
+/* ---------- Theme 1 line drawing of one branch: thin strokes fan from the trunk tip, sub-branches are dots,
+   companies are small open circles (name on hover), labels are plain text ---------- */
+function lineBranch(B, b, c, g, gl, gn, y0) {
+  const line = (par, P, w, stage) => el("path", { class: "limb " + stage, pathLength: 1, d: pathD(P), stroke: c, fill: "none", "stroke-width": w, "stroke-linecap": "round" }, par);
+  line(g, [[0, y0], [B.x * .12, y0 + (B.y - y0) * .55], [B.x * .7, B.y + (y0 - B.y) * .12], [B.x, B.y]], 9, "main");
+  let tx = B.x, ty = B.y - y0; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+  const nodes = el("g", { class: "nodes" }, gn), lnodes = el("g", { class: "nodes n-leaf" }, gl);
+  B.subs.forEach(sb => {
+    const d = sb.data, sg = el("g", { class: "g-sub", "data-id": d.id }, lnodes), sgb = el("g", { class: "g-sub", "data-id": d.id }, nodes);
+    line(g, [[B.x, B.y], [B.x + tx * 70, B.y + ty * 70], [sb.x, sb.y]], 5, "sub");
+    sb.leaves.forEach(lf => {
+      el("line", { x1: sb.x, y1: sb.y, x2: lf.x, y2: lf.y, stroke: c, "stroke-width": 3, "stroke-linecap": "round" }, sg);
+      const hit = el("g", { class: "leafhit" }, sg);
+      el("circle", { cx: lf.x, cy: lf.y, r: Math.max(9, lf.r * .3), fill: "var(--bg)", stroke: c, "stroke-width": 3.5 }, hit);
+      el("circle", { cx: lf.x, cy: lf.y, r: lf.r * .9, fill: "transparent" }, hit);
+      hit.addEventListener("pointerenter", e => tipShow(e, lf.data, d.label, c));
+      hit.addEventListener("pointermove", tipMove); hit.addEventListener("pointerleave", tipHide);
+    });
+    const s = el("g", { class: "ln-s n-sub" }, sgb), r = F.subFont * .45, SF = F.subFont * 1.35;
+    el("circle", { cx: sb.x, cy: sb.y, r, fill: c, stroke: "var(--bg)", "stroke-width": 3 }, s);
+    const t = el("text", { x: sb.x, y: sb.y - r - 16, "text-anchor": "middle", "font-size": SF }, s); t.textContent = d.label;
+    s.addEventListener("click", e => { e.stopPropagation(); zoomTo(b.id, d.id); });
+  });
+  // branch name sits just past the outermost company of its crown, along the line from the trunk tip
+  const reach = Math.max(...B.subs.flatMap(sb => [sb, ...sb.leaves]).map(p => p.x * tx + (p.y - y0) * ty));
+  const BF = F.branchFont * 2, lx = tx * (reach + BF * 1.1), ly = y0 + ty * (reach + BF * 1.1);
+  const anchor = tx < -.35 ? "end" : tx > .35 ? "start" : "middle";
+  const bl = el("g", { class: "ln-b n-branch" }, nodes);
+  el("circle", { cx: B.x, cy: B.y, r: 10, fill: c }, bl);
+  const no = el("text", { class: "ln-no", x: lx, y: ly - BF * .95, "text-anchor": anchor, "font-size": BF * .42 }, bl);
+  no.textContent = String(B.idx + 1).padStart(2, "0");
+  const t = el("text", { x: lx, y: ly, "text-anchor": anchor, "font-size": BF }, bl); t.textContent = b.label;
+  bl.addEventListener("click", e => { e.stopPropagation(); zoomTo(b.id); });
+}
+
 /* ---------- close-up view of one branch: branch, sub-branches, one row per company ---------- */
 function renderFocus(bid, sid) {
   const tree = S.tree, bi = tree.branches.findIndex(b => b.id === bid), b = tree.branches[bi];
@@ -550,28 +617,34 @@ function renderFocus(bid, sid) {
     return { ch, cy: top + h / 2, leaves: cos.map((co, i) => ({ co, y: top + ROW * (i + .5), r: R[rIdx({ band: co.band || ch.band })] })) };
   });
   const total = y - GAP, by = total / 2;
-  const limbs = el("g", {}, fs), nodes = el("g", {}, fs);
+  const limbs = el("g", {}, fs), nodes = el("g", {}, fs), LN = document.documentElement.dataset.style === "signal";
   const wsum = rows.reduce((m, r) => m + Math.max(F.minSub, r.leaves.length * F.unit * 1.6), 0);
   let off = -wsum / 2;
   rows.forEach(r => {
     const g = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, nodes);
     const lg = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, limbs);
     const ww = Math.max(F.minSub, r.leaves.length * F.unit * 1.6), o = off + ww / 2; off += ww;
-    el("path", { d: taper([[bw - 10, by + o], [bw + 110, r.cy], [subLeft + 4, r.cy]], ww, Math.max(4, ww * .6)), fill: c }, lg);
+    if (LN) el("path", { d: pathD([[bw + 14, by], [bw + 110, r.cy], [subLeft - 18, r.cy]]), fill: "none", stroke: c, "stroke-width": 3, "stroke-linecap": "round" }, lg);
+    else el("path", { d: taper([[bw - 10, by + o], [bw + 110, r.cy], [subLeft + 4, r.cy]], ww, Math.max(4, ww * .6)), fill: c }, lg);
     const x0 = subLeft + subW;
     r.leaves.forEach(lf => {
       if (!lf.co.name) return;
-      el("path", { d: `M${x0},${r.cy} C${x0 + 80},${r.cy} ${dotX - 80},${lf.y} ${dotX},${lf.y}`, fill: "none", stroke: c, "stroke-width": 3.5, "stroke-linecap": "round" }, lg);
+      el("path", { d: `M${x0},${r.cy} C${x0 + 80},${r.cy} ${dotX - 80},${lf.y} ${dotX},${lf.y}`, fill: "none", stroke: c, "stroke-width": LN ? 1.5 : 3.5, "stroke-linecap": "round" }, lg);
       leafMark(g, dotX, lf.y, lf.r, c, lf.co, -18);
       const t = el("text", { class: "f-lbl", x: dotX + 58, y: lf.y, "dominant-baseline": "central", "font-size": LF }, g);
       t.textContent = lf.co.name;
       if (lf.co.loc) { const lt = el("tspan", { class: "f-loc", dx: 14, "font-size": LF * .72 }, t); lt.textContent = lf.co.loc; }
     });
-    const box = boxed(g, subLeft + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
-    box.querySelector("rect").setAttribute("fill", "var(--panel)"); setSubStroke(box, Math.max(4, ww * .6), 3.5);
+    if (LN) { const s = el("g", { class: "ln-s" }, g);
+      el("circle", { cx: subLeft - 8, cy: r.cy, r: 10, fill: c }, s);
+      const t = el("text", { x: subLeft + 12, y: r.cy, "dominant-baseline": "central", "font-size": SF }, s); t.textContent = r.ch.label; }
+    else { const box = boxed(g, subLeft + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
+      box.querySelector("rect").setAttribute("fill", "var(--panel)"); setSubStroke(box, Math.max(4, ww * .6), 3.5); }
     g.onclick = e => { e.stopPropagation(); zoomTo(bid, r.ch.id); };
   });
-  boxed(nodes, bw / 2, by, b.label, BF, BF * .55, BF * .38, "bbox", c);
+  if (LN) { const t = el("text", { x: bw - 10, y: by, "text-anchor": "end", "dominant-baseline": "central", "font-size": BF * 1.1, "font-weight": 800, "letter-spacing": "-.03em" }, nodes); t.textContent = b.label;
+    el("circle", { cx: bw + 12, cy: by, r: 9, fill: c }, nodes); }
+  else boxed(nodes, bw / 2, by, b.label, BF, BF * .55, BF * .38, "bbox", c);
   fs.classList.toggle("subsel", !!sid);
   const bb = fs.getBBox ? null : null;
   const box = nodes.getBBox(), lb = limbs.getBBox();
@@ -852,16 +925,26 @@ function onKey(e) {
   else if (/^[1-9]$/.test(k)) { const idx = S.steps.findIndex(s => s.branch === (S.tree.branches[+k - 1] || {}).id); if (idx >= 0) go(idx); }
   else if (k === "f" || k === "F") toggleFS();
   else if (k === "p" || k === "P") openNotes();
-  else if (k === "t" || k === "T") toggleTheme();
+  else if ((k === "t" || k === "T") && document.documentElement.dataset.style === "default") toggleTheme();
   else if (k === "?") $("help").classList.toggle("open");
 }
 function toggleFS() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
 function themeLabel() { const dk = document.documentElement.dataset.theme === "dark", b = $("themeBtn"); b.innerHTML = dk ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>'; b.setAttribute("aria-label", dk ? "Switch to light mode" : "Switch to dark mode"); b.title = (dk ? "Light mode" : "Dark mode") + " (T)"; }
 function toggleTheme() {
-  const h = document.documentElement; h.dataset.theme = h.dataset.theme === "dark" ? "light" : "dark"; themeLabel();
-  // text colours are chosen per theme, so redraw everything, including an open close-up
-  const s = S.step, z = S.zoomed; $("focus").innerHTML = ""; render(); go(s); if (z && !S.zoomed) zoomTo(z);
+  const h = document.documentElement; h.dataset.theme = h.dataset.theme === "dark" ? "light" : "dark"; themeLabel(); redraw();
 }
+// text colours are chosen per theme, so redraw everything, including an open close-up and the forest
+function redraw() { const s = S.step, z = S.zoomed; $("focus").innerHTML = ""; $("forest").innerHTML = ""; render(); go(s); if (z && !S.zoomed) zoomTo(z); }
+// theme dropdown: Default (light / dark toggle) or Theme 1 "Signal" (dark only); remembered on this device, or set with ?theme=1
+function setStyle(v, save) {
+  if (!["default", "signal"].includes(v)) v = "default";
+  document.documentElement.dataset.style = v; $("style").value = v;
+  if (save) try { localStorage.setItem("ct-style", v); } catch (e) {}
+}
+{ const q = new URLSearchParams(location.search).get("theme"); let v = q === "1" ? "signal" : q === "0" ? "default" : null;
+  if (!v) try { v = localStorage.getItem("ct-style"); } catch (e) {}
+  setStyle(v || "default", false); }
+$("style").onchange = e => { setStyle(e.target.value, true); e.target.blur(); redraw(); };
 document.addEventListener("keydown", onKey);
 // on-screen Back / Next: blur after click so Space or Enter on the keyboard never triggers a second step
 $("prev").onclick = e => { e.currentTarget.blur(); go(S.step - 1); };
@@ -910,7 +993,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const st = S.steps[S.step] || {};
     return { discipline: S.tree && S.tree.meta ? S.tree.meta.discipline + " · " + (S.tree.meta.region || "") : "",
       step: (S.step + 1) + " / " + S.steps.length, title: st ? stepTitle(st) : "", closeUp: S.zoomed || null,
-      theme: document.documentElement.dataset.theme };
+      theme: document.documentElement.dataset.style === "signal" ? "theme1" : document.documentElement.dataset.theme };
   } });
 });
 
