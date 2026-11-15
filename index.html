@@ -81,8 +81,6 @@ header p{margin:6px 0 0;color:var(--ink-2);font-size:clamp(14px,1.1vw,18px)}
 .card.focus{box-shadow:0 0 0 2px var(--c),var(--shadow-sm)}
 .card h3{margin:0 0 14px;font-size:clamp(17px,1.35vw,22px);font-weight:600;letter-spacing:-.015em;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
 .card h3>span:first-child::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:10px;vertical-align:.08em}
-.card h3 .band{color:var(--c);font-weight:700;white-space:nowrap}
-.card h3 .band small{display:block;font-size:12px;color:var(--ink-2);font-weight:500;text-align:right}
 .card dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0 0 14px;font-size:clamp(14px,1.05vw,16px)}
 .card dt{color:var(--ink-2)} .card dd{margin:0;font-weight:500}
 .co-list{list-style:none;margin:6px 0 0;padding:0;display:grid}
@@ -150,7 +148,6 @@ body.has-region #focus{top:172px;height:calc(100% - 254px)}
 #focus.subsel .f-sub{opacity:.18} #focus.subsel .f-sub.on{opacity:1}
 #focus .f-lbl{font-weight:600}
 #focus .f-loc{font-weight:500;fill:var(--ink-2)}
-#focus .f-band{font-weight:700}
 /* ============ DIALOG + KBD (shadcn Dialog, Kbd) ============ */
 #help{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.5);z-index:9}
 #help.open{display:grid}
@@ -515,7 +512,7 @@ function render() {
         hit.addEventListener("pointerenter", e => tipShow(e, lf.data, d.label, c));
         hit.addEventListener("pointermove", tipMove); hit.addEventListener("pointerleave", tipHide);
         const lt = el("text", { class: "leaf-lbl", x: lf.lab.x, y: lf.lab.y, "text-anchor": "middle", "dominant-baseline": "central", "font-size": F.leafFont }, sg);
-        lt.textContent = lf.data.name + (lf.data.band && lf.data.band !== d.band ? ` ${lf.data.band}` : "");
+        lt.textContent = lf.data.name;
       });
     });
     const bb = boxed(nodes, B.x, B.y, b.label, F.branchFont, F.branchFont * .55, F.branchFont * .375, "bbox n-branch", c);
@@ -525,8 +522,8 @@ function render() {
   // chrome
   $("title").textContent = tree.meta.title;
   $("subtitle").textContent = [tree.meta.subtitle, tree.meta.asOf].filter(Boolean).join(" · ");
-  $("legend").innerHTML = tree.bands.map((bd, i) => `<span class="k">${(r => `<svg width="${r * 2.2}" height="${r * 2.2}" viewBox="${-r * 1.1} ${-r * 1.1} ${r * 2.2} ${r * 2.2}"><circle r="${r}" fill="var(--ink-2)"/></svg>`)(F.leafR[Math.min(i, F.leafR.length - 1)] * .45)}<b>${bd.id}</b> ${bd.range}</span>`).join("")
-    + (tree.meta.disclaimer ? `<span class="disc">${tree.meta.disclaimer}</span>` : "");
+  // salary bands are not shown on screen (they still set leaf sizes); the legend only carries the disclaimer
+  $("legend").innerHTML = tree.meta.disclaimer ? `<span class="disc">${tree.meta.disclaimer}</span>` : "";
 
   const box = world.getBBox();
   S.home = fitBox(box, 1, 0.015, document.body.classList.contains("has-region") ? 172 : 118, 64);
@@ -564,7 +561,6 @@ function renderFocus(bid, sid) {
       leafMark(g, dotX, lf.y, lf.r, c, lf.co, -18);
       const t = el("text", { class: "f-lbl", x: dotX + 58, y: lf.y, "dominant-baseline": "central", "font-size": LF }, g);
       t.textContent = lf.co.name;
-      if (lf.co.band && lf.co.band !== r.ch.band) { const bt = el("tspan", { class: "f-band", dx: 12, fill: c }, t); bt.textContent = lf.co.band; }
       if (lf.co.loc) { const lt = el("tspan", { class: "f-loc", dx: 14, "font-size": LF * .72 }, t); lt.textContent = lf.co.loc; }
     });
     const box = boxed(g, subLeft + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
@@ -780,16 +776,15 @@ function companyRow(co, ch, tree) {
   const where = [co.loc, inIndia && co.abroad ? `also ${co.abroad}` : "", !inIndia && co.india ? `also ${co.india}, India` : ""].filter(Boolean).join(" · ");
   const letter = esc((co.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase());
   return `<li><span class="co-logo"><b class="lt">${letter}</b><img alt="" data-n="${esc(co.name)}" data-l="${esc(co.logo || "")}"></span>`
-    + `<span class="co-name">${name}${co.band && co.band !== ch.band ? `<i>${co.band}</i>` : ""}${where ? `<small>${esc(where)}</small>` : ""}${co.head ? `<small>${esc(co.head.role)}: <b>${esc(co.head.name)}</b></small>` : ""}</span>`
+    + `<span class="co-name">${name}${where ? `<small>${esc(where)}</small>` : ""}${co.head ? `<small>${esc(co.head.role)}: <b>${esc(co.head.name)}</b></small>` : ""}</span>`
     + `<span class="co-links">${links.join("")}</span></li>`;
 }
 function openPanel(bid, sid) {
   const tree = S.tree, bi = tree.branches.findIndex(b => b.id === bid), b = tree.branches[bi], c = colorOf(b, bi);
-  const band = id => tree.bands.find(x => x.id === id) || { range: "" };
   $("panelBody").innerHTML = `<div class="eyebrow" style="color:${c}">${tree.meta.discipline} · Branch ${bi + 1}</div>
     <h2>${b.label}</h2><p class="sum">${b.summary || ""}</p>` +
     b.children.map(ch => `<div class="card ${ch.id === sid ? "focus" : ""}" data-id="${ch.id}" style="--c:${c}">
-      <h3><span>${ch.label}</span><span class="band">${ch.band || ""}<small>${band(ch.band).range}</small></span></h3>
+      <h3><span>${ch.label}</span></h3>
       <dl>${tree.attributes.filter(a => ch[a.key]).map(a => `<dt>${a.label}</dt><dd>${ch[a.key]}</dd>`).join("")}</dl>
       <ul class="co-list">${(ch.companies || []).map(co => companyRow(co, ch, tree)).join("")}</ul>
     </div>`).join("");

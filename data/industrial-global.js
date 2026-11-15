@@ -13,7 +13,7 @@
     id: "id-global", discipline: "Industrial Design", region: "Outside India",
     title: "The Industrial Design Career Tree", subtitle: "Where a product designer can grow outside India", asOf: "Nov 2026",
     linkedinRole: "industrial designer",
-    disclaimer: "Studios verified Nov 2026 (press, company sites, job listings). Heads of design shown only where press names them. Salaries not researched."
+    disclaimer: "Studios verified Nov 2026 (press, company sites, job listings). Heads of design shown only where press names them."
   },
   bands: [],
   attributes: [

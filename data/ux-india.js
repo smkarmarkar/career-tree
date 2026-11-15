@@ -21,7 +21,7 @@
     subtitle: "Where a product designer can grow in India",
     region: "India",
     asOf: "Nov 2026",
-    disclaimer: "Companies checked Nov 2026. Salary bands are indicative fresher CTC (0 to 2 yrs) estimates, not yet verified."
+    disclaimer: "Companies checked Nov 2026."
   },
   bands: [
     { id: "₹",   label: "Modest", range: "₹4 to 8 LPA" },

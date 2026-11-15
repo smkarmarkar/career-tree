@@ -11,7 +11,7 @@
   meta: {
     id: "id-india", discipline: "Industrial Design", region: "India", linkedinRole: "industrial designer", title: "The Industrial Design Career Tree",
     subtitle: "Where a product designer can grow in India", region: "India", asOf: "Nov 2026",
-    disclaimer: "Companies verified for design work in India (NID 2024-25 records, press, job listings). Salary bands not researched yet."
+    disclaimer: "Companies verified for design work in India (NID 2024-25 records, press, job listings)."
   },
   bands: [],  // salary bands not researched yet: no legend, all leaves the same size
   attributes: [
