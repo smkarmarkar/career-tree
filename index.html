@@ -4,122 +4,177 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Design Career Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ============ THEME (change this, the rendering changes) ============ */
+/* ============ THEME: shadcn/ui, "stone" base colour (hex equivalents of its oklch tokens) ============
+   Two deliberate departures, both for projection in a bright room:
+   1. The canvas uses shadcn's --muted (stone-100) instead of white, so white cards lift off it.
+   2. Secondary text uses stone-600 (7.4:1) instead of shadcn's stone-500 --muted-foreground (4.5:1).
+   Branch colours (--b1..--b7) are this project's own: they carry meaning and pass 6:1 contrast. */
 :root{
-  --bg:#F5F2EB; --ink:#1B1A17; --ink-2:#55524B; --line:#D9D3C7;
-  --panel:#FFFFFF; --trunk:#2A2824; --ground:#CFC7B8;
-  /* branch colours: each clears 6:1 against white text and 5.4:1 against the page, with headroom for projector washout */
+  --radius:10px;
+  --background:#FFFFFF; --foreground:#0C0A09; --primary:#1C1917; --primary-foreground:#FAFAF9;
+  --muted:#F5F5F4; --muted-foreground:#57534E; --accent:#F5F5F4; --border:#E7E5E4; --ring:#A8A29E;
+  --bg:#F5F5F4; --ink:#0C0A09; --ink-2:#57534E; --line:#E7E5E4; --panel:#FFFFFF;
+  --trunk:#1C1917; --ground:#D6D3D1; --ghost:#E7E5E4; --tablist:#E7E5E4;
+  --shadow-xs:0 1px 2px rgba(0,0,0,.05); --shadow-sm:0 1px 3px rgba(0,0,0,.10),0 1px 2px -1px rgba(0,0,0,.10);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.10),0 4px 6px -4px rgba(0,0,0,.10);
   --b1:#0B6B60; --b2:#3A3DB8; --b3:#AD3A09; --b4:#A3168F; --b5:#1A5FB4; --b6:#7F5D00; --b7:#1E6E33;
-  --ghost:#E6E0D4;
-  --font: "Inter","Segoe UI","Helvetica Neue",Arial,sans-serif;
-  --serif: Georgia,"Times New Roman",serif;
-  
+  --font:"Geist","Inter",ui-sans-serif,system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#121212; --ink:#F2EFE8; --ink-2:#B5B0A6; --line:#3A3833; --panel:#1E1D1B; --ghost:#262522; --trunk:#E8E2D6; --ground:#4A463F;
+    --background:#0C0A09; --foreground:#FAFAF9; --primary:#E7E5E4; --primary-foreground:#1C1917;
+    --muted:#292524; --muted-foreground:#A8A29E; --accent:#292524; --border:#292524; --ring:#78716C;
+    --bg:#0C0A09; --ink:#FAFAF9; --ink-2:#A8A29E; --line:#292524; --panel:#1C1917;
+    --trunk:#E7E5E4; --ground:#44403C; --ghost:#292524; --tablist:#292524;
     --b1:#2CC4B0; --b2:#8E92FF; --b3:#FF8A4C; --b4:#F06BDB; --b5:#5AA8FF; --b6:#F2C14E; --b7:#5DD47A;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#121212; --ink:#F2EFE8; --ink-2:#B5B0A6; --line:#3A3833; --panel:#1E1D1B; --ghost:#262522; --trunk:#E8E2D6; --ground:#4A463F;
+  --background:#0C0A09; --foreground:#FAFAF9; --primary:#E7E5E4; --primary-foreground:#1C1917;
+  --muted:#292524; --muted-foreground:#A8A29E; --accent:#292524; --border:#292524; --ring:#78716C;
+  --bg:#0C0A09; --ink:#FAFAF9; --ink-2:#A8A29E; --line:#292524; --panel:#1C1917;
+  --trunk:#E7E5E4; --ground:#44403C; --ghost:#292524; --tablist:#292524;
   --b1:#2CC4B0; --b2:#8E92FF; --b3:#FF8A4C; --b4:#F06BDB; --b5:#5AA8FF; --b6:#F2C14E; --b7:#5DD47A;
 }
-/* ============ LAYOUT ============ */
+/* ============ BASE ============ */
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden}
-#stage{position:fixed;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 50%,transparent)}
+#stage{position:fixed;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;transition:opacity .6s}
 #stage.dragging{cursor:grabbing}
 header{position:fixed;left:32px;top:24px;pointer-events:none;z-index:2}
-header h1{font-family:var(--serif);font-weight:400;font-size:clamp(26px,2.6vw,44px);margin:0;letter-spacing:-.01em}
+header h1{font-weight:700;font-size:clamp(26px,2.5vw,42px);margin:0;letter-spacing:-.025em;line-height:1.15}
 header p{margin:6px 0 0;color:var(--ink-2);font-size:clamp(14px,1.1vw,18px)}
-#legend{position:fixed;left:32px;bottom:22px;display:flex;gap:22px;align-items:center;font-size:15px;color:var(--ink-2);z-index:2;flex-wrap:wrap;max-width:60vw}
-#legend .k{display:flex;align-items:center;gap:8px}
-#legend .dot{border-radius:50%;background:var(--ink-2)}
-#legend .disc{font-size:12px;width:100%;opacity:.8}
-#nav{position:fixed;right:20px;bottom:14px;display:flex;align-items:center;gap:10px;z-index:5;background:var(--bg);padding:6px;border-radius:14px;box-shadow:0 2px 14px rgba(0,0,0,.12)}
-#nav button{font:600 16px var(--font);color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px 18px;cursor:pointer;min-width:96px}
-#nav button:hover:not(:disabled){border-color:var(--ink)}
-#nav button:disabled{opacity:.35;cursor:default}
-#nav #next{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-#counter{font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:56px;text-align:center}
+#legend{position:fixed;left:32px;bottom:22px;display:flex;gap:20px;align-items:center;font-size:14px;color:var(--ink-2);z-index:2;flex-wrap:wrap;max-width:60vw}
+#legend .k{display:flex;align-items:center;gap:8px} #legend b{color:var(--ink);font-weight:600}
+#legend .disc{font-size:12px;width:100%}
+/* ============ BUTTONS (shadcn Button: outline, default) ============ */
 #controls{position:fixed;right:20px;top:18px;display:flex;gap:8px;z-index:4;transition:opacity .4s}
 body.idle #controls{opacity:0;pointer-events:none}
-#controls select,#controls button{font:14px var(--font);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
-#controls button:hover,#controls select:hover{border-color:var(--ink-2)}
-/* panel */
-#panel{position:fixed;top:0;right:0;height:100%;width:42vw;max-width:760px;background:var(--panel);border-left:1px solid var(--line);
-  transform:translateX(102%);transition:transform .55s cubic-bezier(.2,.7,.2,1);z-index:3;overflow-y:auto;padding:76px 40px 96px}
+#controls select,#controls button,#nav button{font:500 14px/1 var(--font);color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:calc(var(--radius) - 2px);height:32px;padding:0 12px;cursor:pointer;box-shadow:var(--shadow-xs);transition:background .15s,color .15s,box-shadow .15s}
+#controls button.icon{width:32px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+#controls select:hover,#controls button:hover,#nav button:hover:not(:disabled){background:var(--accent)}
+#controls select{appearance:none;-webkit-appearance:none;padding-right:30px;background-repeat:no-repeat;background-position:right 10px center;background-size:12px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")}
+#nav{position:fixed;right:20px;bottom:14px;display:flex;align-items:center;gap:8px;z-index:5;background:var(--panel);padding:6px;border:1px solid var(--line);border-radius:calc(var(--radius) + 4px);box-shadow:var(--shadow-sm)}
+#nav button{height:40px;padding:0 16px;font-size:15px;min-width:96px}
+#nav #next{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+#nav #next:hover:not(:disabled){background:color-mix(in srgb,var(--primary) 90%,transparent)}
+#nav button:disabled{opacity:.5;cursor:default;box-shadow:none}
+#counter{font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:56px;text-align:center}
+/* ============ TABS (shadcn Tabs) for region ============ */
+#region{display:none;margin-top:14px;pointer-events:auto;background:var(--tablist);border-radius:var(--radius);padding:3px;gap:2px;width:max-content}
+#region.on{display:inline-flex}
+#region button{font:500 15px/1 var(--font);color:var(--ink-2);background:transparent;border:1px solid transparent;border-radius:calc(var(--radius) - 2px);height:34px;padding:0 14px;cursor:pointer;transition:background .15s,color .15s}
+#region button[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:var(--shadow-sm)}
+/* ============ SHEET + CARDS (shadcn Sheet, Card, Badge) ============ */
+#panel{position:fixed;top:0;right:0;height:100%;width:var(--pw,min(42vw,760px));background:var(--panel);border-left:1px solid var(--line);box-shadow:var(--shadow-lg);
+  transform:translateX(102%);transition:transform .5s cubic-bezier(.2,.7,.2,1);z-index:3;overflow-y:auto;padding:72px 32px 96px}
 #panel.open{transform:none}
-#panel .eyebrow{font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
-#panel h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,2.4vw,40px);margin:8px 0 10px;line-height:1.1}
-#panel .sum{font-size:clamp(16px,1.25vw,20px);color:var(--ink-2);margin:0 0 26px;line-height:1.45}
-.card{border:1px solid var(--line);border-left:6px solid var(--c);border-radius:10px;padding:18px 20px;margin-bottom:16px;transition:box-shadow .3s,transform .3s}
-.card.focus{box-shadow:0 0 0 3px var(--c);transform:translateX(-4px)}
-.card h3{margin:0 0 12px;font-size:clamp(18px,1.4vw,23px);display:flex;justify-content:space-between;gap:12px;align-items:baseline}
-.card h3 .band{color:var(--c);font-weight:800;white-space:nowrap}
+#panel .eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+#panel h2{font-weight:700;letter-spacing:-.025em;font-size:clamp(26px,2.2vw,36px);margin:6px 0 8px;line-height:1.15}
+#panel .sum{font-size:clamp(15px,1.2vw,19px);color:var(--ink-2);margin:0 0 24px;line-height:1.5}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--radius) + 4px);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow-sm);transition:box-shadow .25s}
+.card.focus{box-shadow:0 0 0 2px var(--c),var(--shadow-sm)}
+.card h3{margin:0 0 14px;font-size:clamp(17px,1.35vw,22px);font-weight:600;letter-spacing:-.015em;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.card h3>span:first-child::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:10px;vertical-align:.08em}
+.card h3 .band{color:var(--c);font-weight:700;white-space:nowrap}
 .card h3 .band small{display:block;font-size:12px;color:var(--ink-2);font-weight:500;text-align:right}
-.card dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0 0 12px;font-size:clamp(14px,1.05vw,17px)}
-.card dt{color:var(--ink-2)} .card dd{margin:0;font-weight:600}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font-size:14px;padding:4px 10px;border-radius:99px;border:1.5px solid var(--c);font-weight:600;display:inline-flex;align-items:center;gap:6px}
-.chip img{height:18px;width:auto;max-width:48px;display:none} .chip img.ok{display:block}
-.mark .mono{font-weight:800;pointer-events:none}
-.mark .logo-disc,.mark .logo-img{opacity:0} .mark.haslogo .logo-disc,.mark.haslogo .logo-img{opacity:1} .mark.haslogo .mono{opacity:0}
-.chip i{font-style:normal;color:var(--c);margin-left:6px;font-weight:800}
-#panel .close{position:absolute;right:20px;top:18px;border:none;background:none;font-size:26px;color:var(--ink-2);cursor:pointer}
-/* svg */
+.card dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0 0 14px;font-size:clamp(14px,1.05vw,16px)}
+.card dt{color:var(--ink-2)} .card dd{margin:0;font-weight:500}
+.co-list{list-style:none;margin:6px 0 0;padding:0;display:grid}
+.co-list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 0;border-top:1px solid var(--line)}
+.co-list li:first-child{border-top:0}
+.co-logo{flex:none;width:36px;height:36px;display:grid;place-items:center}
+.co-logo img{width:36px;height:36px;object-fit:contain;padding:4px;background:#fff;border-radius:8px;display:none} .co-logo img.ok{display:block}
+.co-logo .lt{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--c,var(--ink));color:#fff} .co-logo:has(img.ok) .lt{display:none}
+.co-name{flex:1 1 140px;min-width:0;font-size:16px;font-weight:600;line-height:1.25}
+.co-name i{font-style:normal;color:var(--c);margin-left:6px;font-weight:700}
+.co-name small{display:block;font-size:13px;font-weight:400;color:var(--ink-2);margin-top:2px}
+.co-name small b{color:var(--ink);font-weight:600}
+.co-list .co-links{flex:none;margin-left:auto;display:flex;gap:16px;font-size:13px;white-space:nowrap}
+.co-list .co-links a{color:var(--ink);font-weight:500;text-decoration:underline;text-decoration-color:var(--c);text-underline-offset:4px}
+#panel .close{position:absolute;right:16px;top:16px;width:32px;height:32px;display:grid;place-items:center;border:none;border-radius:calc(var(--radius) - 4px);background:none;font-size:22px;line-height:1;color:var(--ink);opacity:.7;cursor:pointer}
+#panel .close:hover{opacity:1;background:var(--accent)}
+#panelGrip{position:fixed;top:0;bottom:0;width:14px;margin-left:-7px;cursor:col-resize;z-index:4;display:none;touch-action:none}
+body.focus #panelGrip{display:block}
+#panelGrip::after{content:"";position:absolute;left:5px;top:50%;width:4px;height:56px;margin-top:-28px;border-radius:4px;background:var(--border,#D6D3D1);transition:background .15s,height .15s}
+#panelGrip:hover::after,#panelGrip.on::after{background:var(--ring,#A8A29E);height:84px;margin-top:-42px}
+body.resizing,body.resizing *{cursor:col-resize!important;user-select:none!important}
+body.resizing #panel,body.resizing #focus{transition:none}
+/* ============ TREE (SVG) ============ */
 svg text{font-family:var(--font);fill:var(--ink)}
+.mark .mono{font-weight:700;pointer-events:none}
+.mark .logo-disc,.mark .logo-img{opacity:0} .mark.haslogo .logo-disc,.mark.haslogo .logo-img{opacity:1} .mark.haslogo .mono{opacity:0}
 .g-branch{transition:opacity .6s}
 .ghost path{fill:url(#ghostGr)}
+.leafhit{cursor:default}
+#tip{position:fixed;z-index:50;pointer-events:none;padding:8px 12px;border-radius:var(--radius,10px);background:var(--panel,#fff);color:var(--ink,#0C0A09);border:1px solid var(--line,#E7E5E4);box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:18px;font-weight:600;line-height:1.3;white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s}
+#tip.on{opacity:1;transform:none}
+#tip{display:flex;align-items:center;gap:12px}
+#tip img{width:40px;height:40px;object-fit:contain;padding:5px;background:#fff;border-radius:8px;border:1px solid #E7E5E4}
+#tip small{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--ink-2,#57534E)}
+#tip i{width:8px;height:8px;border-radius:2px;display:inline-block}
 .g-branch.off{opacity:0;pointer-events:none}
 .g-branch.dim{opacity:.12}
-.limb{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0;transition:stroke-dashoffset 1s cubic-bezier(.3,.6,.2,1)}
-.off .limb{stroke-dashoffset:1}
-.nodes{transition:opacity .5s .7s,transform .5s .7s}
-.off .nodes{opacity:0}
+/* Reveal sequence for a branch: 1 main limb grows from the trunk, 2 branch label appears at its tip,
+   3 sub-limbs grow from the branch label, 4 sub-branch labels appear, 5 leaves appear. Hiding is instant. */
+.limb{fill:none;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}
+.limb.main{transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1) var(--rd,0s)}
+.limb.sub{transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1) calc(var(--rd,0s) + 1.05s)}
+.n-branch{transition:opacity .3s calc(var(--rd,0s) + .85s)}
+.n-sub{transition:opacity .3s calc(var(--rd,0s) + 1.8s)}
+.n-leaf{transition:opacity .45s calc(var(--rd,0s) + 2.05s)}
+.off .limb,.off .limb.main,.off .limb.sub{stroke-dashoffset:1;transition:none}
+.off .n-branch,.off .n-sub,.off .n-leaf{opacity:0;transition:none}
 .bbox{cursor:pointer}
-.bbox text{font-weight:700} .bbox rect{rx:14}
+.bbox text{font-weight:600;letter-spacing:-.01em} .bbox rect{rx:12px}
 .sbox{cursor:pointer}
-.sbox rect{fill:var(--panel)}
-.sbox text{font-weight:650}
-.sbox:hover rect,.bbox:hover rect{filter:brightness(1.08)}
-.leaf-lbl{paint-order:stroke;stroke:var(--bg);stroke-width:8px;stroke-linejoin:round;font-weight:600;fill:var(--ink-2);opacity:0;transition:opacity .4s}
-.g-sub{transition:opacity .4s} .subfocus .g-sub{opacity:.18} .subfocus .g-sub.on{opacity:1}  .subfocus .g-sub:not(.on) .leaf-lbl{opacity:0}
-.trunk-lbl{font-family:var(--serif)!important;font-size:46px;fill:var(--ink)}
-#stage{transition:opacity .6s}
+.sbox rect{fill:var(--panel);rx:10px;stroke-width:2.5px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.06))}
+.sbox text{font-weight:600}
+.sbox:hover rect{stroke-width:3.5px} .bbox:hover rect{filter:brightness(1.08)}
+.leaf-lbl{paint-order:stroke;stroke:var(--bg);stroke-width:8px;stroke-linejoin:round;font-weight:500;fill:var(--ink-2);opacity:0;transition:opacity .4s}
+.g-sub{transition:opacity .4s} .subfocus .g-sub{opacity:.18} .subfocus .g-sub.on{opacity:1} .subfocus .g-sub:not(.on) .leaf-lbl{opacity:0}
+.trunk-lbl{font-size:92px;font-weight:700;letter-spacing:-.03em;fill:var(--ink)}
 body.focus #stage{opacity:0}
-#focus{position:fixed;left:24px;top:118px;width:calc(58vw - 48px);height:calc(100% - 200px);opacity:0;pointer-events:none;transition:opacity .5s .2s;z-index:1}
+#focus{position:fixed;left:24px;top:118px;width:calc(100vw - var(--pw,min(42vw,760px)) - 48px);height:calc(100% - 200px);opacity:0;pointer-events:none;transition:opacity .5s .2s;z-index:1}
 body.focus #focus{opacity:1;pointer-events:auto}
+body.has-region #focus{top:172px;height:calc(100% - 254px)}
 #focus text{font-family:var(--font);fill:var(--ink)}
 #focus .f-sub{transition:opacity .35s;cursor:pointer}
 #focus.subsel .f-sub{opacity:.18} #focus.subsel .f-sub.on{opacity:1}
-#focus .f-lbl{font-weight:650}
-#focus .f-band{font-weight:800}
-#help{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.35);z-index:9}
+#focus .f-lbl{font-weight:600}
+#focus .f-loc{font-weight:500;fill:var(--ink-2)}
+#focus .f-band{font-weight:700}
+/* ============ DIALOG + KBD (shadcn Dialog, Kbd) ============ */
+#help{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.5);z-index:9}
 #help.open{display:grid}
-#help div{background:var(--panel);border-radius:14px;padding:28px 34px;font-size:16px;line-height:1.9;max-width:520px}
-#help kbd{border:1px solid var(--line);border-radius:5px;padding:1px 7px;font:13px var(--font);background:var(--bg)}
-#drop{position:fixed;inset:0;display:none;place-items:center;font-size:28px;background:rgba(0,0,0,.4);color:#fff;z-index:10}
+#help div{background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--radius) + 2px);box-shadow:var(--shadow-lg);padding:24px 28px;font-size:15px;line-height:2;max-width:540px}
+#help b{font-size:18px;font-weight:600;letter-spacing:-.015em}
+#help kbd{display:inline-flex;align-items:center;height:22px;padding:0 6px;border-radius:4px;background:var(--muted);color:var(--ink-2);font:500 12px var(--font)}
+#drop{position:fixed;inset:0;display:none;place-items:center;font-size:24px;font-weight:600;background:rgba(0,0,0,.5);color:#fff;z-index:10}
 body.dragover #drop{display:grid}
 </style>
 </head>
 <body>
 <svg id="stage" xmlns="http://www.w3.org/2000/svg"><defs id="defs"></defs><g id="world"></g></svg>
 <svg id="focus" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
-<header><h1 id="title"></h1><p id="subtitle"></p></header>
+<header><h1 id="title"></h1><p id="subtitle"></p><div id="region" role="tablist" aria-label="Region"></div></header>
 <div id="legend"></div>
 <nav id="nav" aria-label="Slides"><button id="prev" aria-label="Previous step">‹ Back</button><span id="counter"></span><button id="next" aria-label="Next step">Next ›</button></nav>
 <div id="controls">
   <select id="dataset" title="Choose discipline"></select>
-  <button id="load" title="Load a JSON data file">Load data</button>
   <button id="notesBtn" title="Presenter notes (P)">Notes</button>
-  <button id="themeBtn" title="Switch theme (T)"></button>
-  <button id="fsBtn" title="Fullscreen (F)">Fullscreen</button>
+  <button id="themeBtn" class="icon" title="Switch theme (T)"></button>
+  <button id="fsBtn" class="icon" title="Fullscreen (F)" aria-label="Fullscreen"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   <button id="helpBtn">?</button>
   <input type="file" id="file" accept=".json,application/json" hidden>
 </div>
+<div id="panelGrip" role="separator" aria-orientation="vertical" aria-label="Drag to resize the details panel" title="Drag to resize"></div>
 <aside id="panel"><button class="close" aria-label="Close">×</button><div id="panelBody"></div></aside>
 <div id="help"><div>
   <b>Presenting</b><br>
@@ -135,6 +190,7 @@ body.dragover #drop{display:grid}
 <!-- DATA LAYER: add or swap files here. Each one pushes a tree into window.CAREER_TREES -->
 <script src="data/ux-india.js"></script>
 <script src="data/industrial-india.js"></script>
+<script src="data/industrial-global.js"></script>
 
 <script>
 (() => {
@@ -149,36 +205,59 @@ const S = { trees: window.CAREER_TREES || [], tree: null, steps: [], step: 0, vb
 
 /* ---------- layout: pure function of data ---------- */
 // Sizing knobs. Widths follow the "sum of branches" rule: every company adds UNIT of thickness.
-const F = { branchFont: 42, subFont: 32, leafFont: 30, leafR: [18, 26, 34], unit: 3.4, minSub: 7,
-  branchR: [360, 330], subR: [860, 640], ring: 0.78, trunkH: 400 };
+const F = { branchFont: 42, subFont: 32, leafFont: 30, leafR: [36, 52, 68], unit: 3.4, minSub: 7,
+  branchR: [360, 330], subR: [860, 640], ring: 0.78, trunkH: 400, pack: 0.62, branchGap: 120 };
+let L_SCALE = 1;
 const boxW = (t, f) => measure(t, f) + f * 1.2;
 function layout(tree) {
-  const GAP = 1.0, A0 = -176, A1 = -4;
-  let t = 0, gi = 0; const slots = [];
-  tree.branches.forEach((b, bi) => { b.children.forEach((c, ci) => slots.push({ b, c, bi, ci, ring: gi++ % 2, pos: t++ })); t += GAP; });
-  const max = t - GAP - 1 || 1;
+  /* Spacing: each sub-branch gets an angle proportional to the room it actually needs
+     (its label plus its fan of leaves), measured along the crown's curve at that angle.
+     Branch gaps are added between branches. If everything cannot fit in the crown's arc,
+     the crown grows just enough to fit, rather than letting labels and twigs overlap. */
+  const A0 = -176, A1 = -4, RANGE = rad(A1 - A0);
+  const all = []; let gi = 0;
+  tree.branches.forEach((b, bi) => b.children.forEach(c => all.push({ c, bi, ring: gi++ % 2 })));
+  all.forEach(s => { const n = (s.c.companies || []).length;
+    s.fw = boxW(s.c.label, F.subFont) + F.leafR[2] * 2.6; s.fh = F.subFont * 1.75 + F.leafR[2] * 2.2 + n * 8; });
+  let scale = 1, ang = all.map((_, i) => A0 + (A1 - A0) * (i + .5) / all.length);
+  for (let pass = 0; pass < 6; pass++) {
+    const rx = F.subR[0] * scale, ry = F.subR[1] * scale;
+    const need = all.map((s, i) => { const a = rad(ang[i]), tx = -rx * Math.sin(a), ty = ry * Math.cos(a), sp = Math.hypot(tx, ty);
+      return (Math.abs(s.fw * tx / sp) + Math.abs(s.fh * ty / sp)) / sp * F.pack; });
+    const gap = all.map((s, i) => i && s.bi !== all[i - 1].bi ? F.branchGap / rx : 0);
+    let acc = 0; const ctr = need.map((nd, i) => { acc += gap[i] + (i ? need[i - 1] / 2 : 0) + nd / 2; return acc; });
+    const span = acc + need[need.length - 1] / 2;
+    if (span > RANGE * 1.001) scale *= span / RANGE;          // grow the crown only when needed
+    ang = ctr.map(c => A0 + (A1 - A0) * c / span);
+  }
+  L_SCALE = scale;
   const L = { branches: [] };
   tree.branches.forEach((b, bi) => {
-    const subs = slots.filter(s => s.bi === bi).map(s => {
-      const a = A0 + (A1 - A0) * s.pos / max, k = s.ring ? F.ring : 1;
+    const subs = all.map((s, i) => [s, ang[i]]).filter(([s]) => s.bi === bi).map(([s, a]) => {
+      const k = s.ring ? F.ring : 1;
       return { data: s.c, a, w: Math.max(F.minSub, (s.c.companies || []).length * F.unit),
-        x: Math.cos(rad(a)) * F.subR[0] * k, y: Math.sin(rad(a)) * F.subR[1] * k - 40 };
+        x: Math.cos(rad(a)) * F.subR[0] * scale * k, y: Math.sin(rad(a)) * F.subR[1] * scale * k - 40 };
     });
-    const am = subs.reduce((m, s) => m + s.a, 0) / subs.length, kk = bi % 2 ? 0.82 : 1;
+    const am = subs.reduce((m, s) => m + s.a, 0) / subs.length, kk = bi % 2 ? 0.82 : 1, bs = 1 + (scale - 1) * .6;
     L.branches.push({ data: b, idx: bi, a: am, subs, w: subs.reduce((m, s) => m + s.w, 0),
-      x: Math.cos(rad(am)) * F.branchR[0] * kk, y: Math.sin(rad(am)) * F.branchR[1] * kk - 70 });
+      x: Math.cos(rad(am)) * F.branchR[0] * bs * kk, y: Math.sin(rad(am)) * F.branchR[1] * bs * kk - 70 });
   });
   L.trunk = L.branches.reduce((m, B) => m + B.w, 0);
   const bItems = L.branches.map(B => ({ n: B, w: boxW(B.data.label, F.branchFont), h: F.branchFont * 1.75 }));
   relax(bItems, 16);
   const sItems = L.branches.flatMap(B => B.subs).map(sb => ({ n: sb, w: boxW(sb.data.label, F.subFont), h: F.subFont * 1.75 }));
   relax([...bItems.map(o => ({ ...o, fixed: 1 })), ...sItems], 24);
+  // keep every limb's path clear of other labels: nudge a label sideways (around the fork) off any line it sits on
+  for (let round = 0; round < 3; round++) {
+    clearPaths(L, bItems, sItems);
+    relax([...bItems.map(o => ({ ...o, fixed: 1 })), ...sItems], 24);
+  }
   const fixedBoxes = [...bItems, ...sItems].map(o => ({ ...o, fixed: 1 }));
   // leaf dots on twigs, then pushed outward so no dot sits on a box or another dot
   const dots = [];
   L.branches.forEach(B => B.subs.forEach(sb => {
     sb.hw = boxW(sb.data.label, F.subFont) / 2; sb.hh = F.subFont * 0.875;
-    const cos = sb.data.companies || [], n = cos.length, spread = Math.min(120, 26 * n);
+    const cos = sb.data.companies || [], n = cos.length, spread = Math.min(110, 24 * n);
     sb.leaves = cos.map((lf, i) => {
       const deg = sb.a + (n > 1 ? (i / (n - 1) - .5) * spread : 0), cx = Math.cos(rad(deg)), cy = Math.sin(rad(deg));
       const tEdge = Math.min(sb.hw / Math.max(Math.abs(cx), 1e-3), sb.hh / Math.max(Math.abs(cy), 1e-3));
@@ -231,6 +310,36 @@ function measure(text, size) {
   mt.setAttribute("font-size", size); mt.textContent = text; return mt.getComputedTextLength();
 }
 // push overlapping boxes apart, outward along their own angle (keeps the tree shape)
+function clearPaths(L, bItems, sItems) {
+  // the same curves the renderer draws: main limbs rise out of the trunk, sub-limbs leave along the limb's direction
+  const curve = (P, t) => { const u = 1 - t; return P.length === 4
+    ? [0, 1].map(k => u * u * u * P[0][k] + 3 * u * u * t * P[1][k] + 3 * u * t * t * P[2][k] + t * t * t * P[3][k])
+    : [0, 1].map(k => u * u * P[0][k] + 2 * u * t * P[1][k] + t * t * P[2][k]); };
+  const paths = [], T = L.branches.reduce((m, B) => m + B.w, 0); let cur = -T / 2;
+  L.branches.forEach(B => {
+    const sx = cur + B.w / 2; cur += B.w;
+    const rise = Math.min(140, Math.abs(B.y) * 0.35), ctrl = [B.x - (B.x - sx) * 0.55, B.y + Math.abs(B.y) * 0.25];
+    paths.push({ P: [[sx, F.trunkH * 0.3], [sx, -rise], ctrl, [B.x, B.y]], w: B.w, own: [B] });
+    let tx = B.x - ctrl[0], ty = B.y - ctrl[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+    B.subs.forEach(sb => paths.push({ P: [[B.x, B.y], [B.x + tx * 90, B.y + ty * 90], [sb.x, sb.y]], w: sb.w, own: [B, sb] }));
+  });
+  const items = [...bItems, ...sItems];
+  for (let it = 0; it < 60; it++) {
+    let moved = false;
+    for (const P of paths) for (const o of items) {
+      if (P.own.includes(o.n)) continue;
+      const hw = o.w / 2 + P.w / 2 + 8, hh = o.h / 2 + P.w / 2 + 8; let hit = null;
+      for (let k = 2; k < 40 && !hit; k++) { const [x, y] = curve(P.P, k / 40);
+        if (Math.abs(x - o.n.x) < hw && Math.abs(y - o.n.y) < hh) hit = [x, y, ...curve(P.P, Math.min(1, k / 40 + .03))]; }
+      if (!hit) continue;
+      // rotate the label around the fork, away from the side of the line it sits on
+      const side = Math.sign((hit[2] - hit[0]) * (o.n.y - hit[1]) - (hit[3] - hit[1]) * (o.n.x - hit[0])) || 1;
+      const d = rad(1.5) * side, c = Math.cos(d), s2 = Math.sin(d), x = o.n.x, y = o.n.y + 40;
+      o.n.x = x * c - y * s2; o.n.y = x * s2 + y * c - 40; o.n.a = Math.atan2(o.n.y, o.n.x) * 180 / Math.PI; moved = true;
+    }
+    if (!moved) break;
+  }
+}
 function relax(items, margin) {
   for (let it = 0; it < 400; it++) {
     let moved = false;
@@ -249,6 +358,7 @@ function relax(items, margin) {
 
 /* ---------- company marks: logo file if present, else a lettered badge ---------- */
 const LOGO = {};
+window.logoFor = co => LOGO[co.logo || slug(co.name)];
 const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const logoSrcs = co => co.logo ? [co.logo] : [`logos/${slug(co.name)}.svg`, `logos/${slug(co.name)}.png`, `logos/${slug(co.name)}.jpg`];
 // leaf shape pointing along the twig (deg), centred on x,y; size follows r so salary bands stay comparable
@@ -258,12 +368,15 @@ function leafPath(r) {
 }
 function leafMark(parent, x, y, r, color, co, deg = 0) {
   const g = el("g", { class: "mark" }, parent);
-  el("path", { d: leafPath(r), transform: `translate(${x},${y}) rotate(${deg})`, fill: color, stroke: "var(--bg)", "stroke-width": 3, "stroke-linejoin": "round" }, g);
+  // simple circle: brand colour with the letter, or a white disc with the logo; a coloured ring either way
+  const sw = Math.max(2.5, r * .1);
+  el("circle", { class: "ring", cx: x, cy: y, r: r + sw * .5, fill: "var(--bg)", stroke: color, "stroke-width": sw }, g);
+  el("circle", { cx: x, cy: y, r: r - sw * .5, fill: color }, g);
   const t = el("text", { class: "mono", x, y: y + r * .04, "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 1.05 }, g);
   t.style.fill = textOn(color);
   t.textContent = (co.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase();
-  el("circle", { class: "logo-disc", cx: x, cy: y, r: r * .82, fill: "#fff" }, g);
-  const sz = r * .82 * 1.42, im = el("image", { class: "logo-img", x: x - sz / 2, y: y - sz / 2, width: sz, height: sz, preserveAspectRatio: "xMidYMid meet" }, g);
+  el("circle", { class: "logo-disc", cx: x, cy: y, r: r - sw * .5, fill: "#fff" }, g);
+  const sz = r * 1.25, im = el("image", { class: "logo-img", x: x - sz / 2, y: y - sz / 2, width: sz, height: sz, preserveAspectRatio: "xMidYMid meet" }, g);
   const key = co.logo || slug(co.name), known = LOGO[key];
   if (known === null) { im.remove(); return g; }
   const srcs = known ? [known] : logoSrcs(co); let k = 0;
@@ -327,13 +440,13 @@ function render() {
   const y0 = H * 0.3 - 1;
   el("path", { fill: "var(--trunk)", d: `M${-T / 2},${y0} C${-T / 2},${H * .55} ${-T * .55},${H * .78} ${-base / 2},${H} L${base / 2},${H} C${T * .55},${H * .78} ${T / 2},${H * .55} ${T / 2},${y0} Z` }, limbsL);
   // faint outlines fade up from the trunk colour, so unrevealed branches still read as part of the tree
-  const gg = el("linearGradient", { id: "ghostGr", gradientUnits: "userSpaceOnUse", x1: 0, y1: H * 0.3, x2: 0, y2: -200 }, defs);
-  el("stop", { offset: "0", "stop-color": trunkC }, gg); el("stop", { offset: "1", "stop-color": css("--ghost") }, gg);
-  const tl = el("text", { class: "trunk-lbl", "text-anchor": "middle", y: H + 64 }, world); tl.textContent = tree.meta.discipline;
+  const gg = el("linearGradient", { id: "ghostGr", gradientUnits: "userSpaceOnUse", x1: 0, y1: 40, x2: 0, y2: -15 }, defs);
+  el("stop", { offset: "0", "stop-color": trunkC }, gg); el("stop", { offset: "1", "stop-color": trunkC, "stop-opacity": 0 }, gg);
+  const tl = el("text", { class: "trunk-lbl", "text-anchor": "middle", y: H + 104 }, world); tl.textContent = tree.meta.discipline;
 
-  const limb = (g, id, P, w0, w1, fill) => {
+  const limb = (g, id, P, w0, w1, fill, stage) => {
     const m = el("mask", { id, maskUnits: "userSpaceOnUse", x: -5000, y: -5000, width: 10000, height: 10000 }, g);
-    el("path", { class: "limb", pathLength: 1, d: pathD(P), stroke: "#fff", fill: "none", "stroke-width": w0 + 30 }, m);
+    el("path", { class: "limb " + stage, pathLength: 1, d: pathD(P), stroke: "#fff", fill: "none", "stroke-width": w0 + 30 }, m);
     el("path", { d: taper(P, w0, w1), fill, mask: `url(#${id})` }, g);
   };
   let cursor = -T / 2;
@@ -355,44 +468,49 @@ function render() {
       const t = 0.34, q = bez(P, t), len = Math.hypot(q.tx, q.ty) || 1, w = B.w * (1 - 0.15 * t) / 2;
       let nx = -q.ty / len, ny = q.tx / len; if (Math.sign(nx) !== side) { nx = -nx; ny = -ny; }
       const E = [q.x + nx * w, q.y + ny * w], S0 = [side * T / 2 * 1.02, F.trunkH * 0.35];
-      el("path", { d: `M${S0}Q${side * T / 2},${E[1]} ${E}L${q.x},${q.y}L${sx},${F.trunkH * 0.3}Z`, fill: `url(#${gid})` }, g);
+      el("path", { d: `M${S0}Q${side * T / 2},${E[1]} ${E}L${q.x},${q.y}L${sx},${F.trunkH * 0.3}Z`, fill: `url(#${gid})`, mask: `url(#m-${b.id})` }, g);
     }
-    el("path", { d: taper(P, B.w, B.w * 0.85) }, ghostL);
-    limb(g, "m-" + b.id, P, B.w, B.w * 0.85, `url(#${gid})`);
+    // ghost = a short stub only (first 22% of the limb), so unrevealed branches read as roots, not long faded lines
+    { const t = 0.22, lp = (a, b) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      const a = lp(P[0], P[1]), b2 = lp(P[1], P[2]), c = lp(P[2], P[3]), d = lp(a, b2), e = lp(b2, c), f = lp(d, e);
+      el("path", { d: taper([P[0], a, d, f], B.w, B.w * (1 - 0.15 * t)) }, ghostL); }
+    limb(g, "m-" + b.id, P, B.w, B.w * 0.85, `url(#${gid})`, "main");
     // sub-limbs leave the branch end side by side, ordered like the sub-branches
     let tx = B.x - ctrl[0], ty = B.y - ctrl[1]; const tl2 = Math.hypot(tx, ty) || 1; tx /= tl2; ty /= tl2;
     let off = -B.w * 0.85 / 2;
     [...B.subs].sort((p, q) => p.a - q.a).forEach(sb => {
       const ww = sb.w * 0.85, o = off + ww / 2; off += ww;
       const s0 = [B.x - ty * o, B.y + tx * o];
-      limb(g, "m-" + b.id + "-" + sb.data.id, [s0, [s0[0] + tx * 90, s0[1] + ty * 90], [sb.x, sb.y]], ww, Math.max(3, ww * 0.55), c);
+      limb(g, "m-" + b.id + "-" + sb.data.id, [s0, [s0[0] + tx * 90, s0[1] + ty * 90], [sb.x, sb.y]], ww, Math.max(3, ww * 0.55), c, "sub");
     });
-    const nodes = el("g", { class: "nodes" }, gn), lnodes = el("g", { class: "nodes" }, gl);
+    const nodes = el("g", { class: "nodes" }, gn), lnodes = el("g", { class: "nodes n-leaf" }, gl);
     B.subs.forEach(sb => {
       const d = sb.data, sg = el("g", { class: "g-sub", "data-id": d.id }, lnodes), sgb = el("g", { class: "g-sub", "data-id": d.id }, nodes);
-      const box = boxed(sgb, sb.x, sb.y, d.label, F.subFont, F.subFont * .6, F.subFont * .375, "sbox", null, c);
+      const box = boxed(sgb, sb.x, sb.y, d.label, F.subFont, F.subFont * .6, F.subFont * .375, "sbox n-sub", null, c);
       box.addEventListener("click", e => { e.stopPropagation(); zoomTo(b.id, d.id); });
       sb.leaves.forEach(lf => {
         el("line", { x1: sb.x + lf.cx * lf.tEdge, y1: sb.y + lf.cy * lf.tEdge, x2: lf.x, y2: lf.y, stroke: c, "stroke-width": F.unit * 1.3, "stroke-linecap": "round" }, sg);
         if (Math.hypot(lf.lab.x - lf.lab.x0, lf.lab.y - lf.lab.y0) > 14)
           el("line", { class: "leaf-lbl", x1: lf.x, y1: lf.y, x2: lf.lab.x, y2: lf.lab.y, style: `stroke:${c}`, "stroke-dasharray": "5 5" }, sg);
-        leafMark(sg, lf.x, lf.y, lf.r, c, lf.data, lf.a);
+        const hit = el("g", { class: "leafhit" }, sg); leafMark(hit, lf.x, lf.y, lf.r, c, lf.data, lf.a);
+        hit.addEventListener("pointerenter", e => tipShow(e, lf.data, d.label, c));
+        hit.addEventListener("pointermove", tipMove); hit.addEventListener("pointerleave", tipHide);
         const lt = el("text", { class: "leaf-lbl", x: lf.lab.x, y: lf.lab.y, "text-anchor": "middle", "dominant-baseline": "central", "font-size": F.leafFont }, sg);
         lt.textContent = lf.data.name + (lf.data.band && lf.data.band !== d.band ? ` ${lf.data.band}` : "");
       });
     });
-    const bb = boxed(nodes, B.x, B.y, b.label, F.branchFont, F.branchFont * .55, F.branchFont * .375, "bbox", c);
+    const bb = boxed(nodes, B.x, B.y, b.label, F.branchFont, F.branchFont * .55, F.branchFont * .375, "bbox n-branch", c);
     bb.addEventListener("click", e => { e.stopPropagation(); zoomTo(b.id); });
   });
 
   // chrome
   $("title").textContent = tree.meta.title;
   $("subtitle").textContent = [tree.meta.subtitle, tree.meta.asOf].filter(Boolean).join(" · ");
-  $("legend").innerHTML = tree.bands.map((bd, i) => `<span class="k">${(r => `<svg width="${r * 2.9}" height="${r * 2.3}" viewBox="${-r * 1.45} ${-r * 1.15} ${r * 2.9} ${r * 2.3}"><path d="${leafPath(r)}" transform="rotate(-18)" fill="var(--ink-2)"/></svg>`)(F.leafR[Math.min(i, F.leafR.length - 1)] * .45)}<b>${bd.id}</b> ${bd.range}</span>`).join("")
+  $("legend").innerHTML = tree.bands.map((bd, i) => `<span class="k">${(r => `<svg width="${r * 2.2}" height="${r * 2.2}" viewBox="${-r * 1.1} ${-r * 1.1} ${r * 2.2} ${r * 2.2}"><circle r="${r}" fill="var(--ink-2)"/></svg>`)(F.leafR[Math.min(i, F.leafR.length - 1)] * .45)}<b>${bd.id}</b> ${bd.range}</span>`).join("")
     + (tree.meta.disclaimer ? `<span class="disc">${tree.meta.disclaimer}</span>` : "");
 
   const box = world.getBBox();
-  S.home = fitBox(box, 1, 0.015, 118, 64);
+  S.home = fitBox(box, 1, 0.015, document.body.classList.contains("has-region") ? 172 : 118, 64);
   setVB(S.home);
 }
 
@@ -428,6 +546,7 @@ function renderFocus(bid, sid) {
       const t = el("text", { class: "f-lbl", x: dotX + 58, y: lf.y, "dominant-baseline": "central", "font-size": LF }, g);
       t.textContent = lf.co.name;
       if (lf.co.band && lf.co.band !== r.ch.band) { const bt = el("tspan", { class: "f-band", dx: 12, fill: c }, t); bt.textContent = lf.co.band; }
+      if (lf.co.loc) { const lt = el("tspan", { class: "f-loc", dx: 14, "font-size": LF * .72 }, t); lt.textContent = lf.co.loc; }
     });
     const box = boxed(g, subLeft + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
     box.querySelector("rect").setAttribute("fill", "var(--panel)");
@@ -459,6 +578,8 @@ function revealedUpTo(i) {
 function go(i) {
   i = Math.max(0, Math.min(S.steps.length - 1, i)); S.step = i;
   const st = S.steps[i], open = revealedUpTo(i);
+  // coming back from a close-up, wait for the tree to fade back in before a branch starts growing
+  document.documentElement.style.setProperty("--rd", document.body.classList.contains("focus") ? ".35s" : "0s");
   world.querySelectorAll(".g-branch").forEach(g => {
     g.classList.toggle("off", !open.has(g.dataset.id));
     g.classList.toggle("dim", st.view === "reveal" && open.has(g.dataset.id) && g.dataset.id !== st.branch);
@@ -508,6 +629,25 @@ function zoomOut(fromStep) {
     g.classList.toggle("dim", st.view === "reveal" && !g.classList.contains("off") && g.dataset.id !== st.branch); });
   animVB(S.home);
 }
+const esc = v => String(v).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+/* LinkedIn: live people-search links (never guessed profile URLs) plus a company page only where confirmed */
+const liPeople = q => "https://www.linkedin.com/search/results/people/?keywords=" + encodeURIComponent(q);
+const liCompany = n => "https://www.linkedin.com/search/results/companies/?keywords=" + encodeURIComponent(n);
+function companyRow(co, ch, tree) {
+  const role = tree.meta.linkedinRole || "designer", inIndia = (tree.meta.region || "India") === "India";
+  const indiaPlace = inIndia ? (co.loc || "India") : co.india, abroadPlace = inIndia ? co.abroad : co.loc;
+  const country = p => p ? p.split(",").pop().trim() : "";
+  const links = [];
+  if (indiaPlace) links.push(`<a href="${liPeople(`${role} ${co.name} India`)}" target="_blank" rel="noopener">Designers in India ↗</a>`);
+  if (abroadPlace) links.push(`<a href="${liPeople(`${role} ${co.name} ${country(abroadPlace)}`)}" target="_blank" rel="noopener">Designers in ${esc(country(abroadPlace))} ↗</a>`);
+  const site = co.url || "https://www.google.com/search?q=" + encodeURIComponent(co.name + " official website");
+  links.push(`<a href="${esc(site)}" target="_blank" rel="noopener"${co.url ? "" : ' title="Website not verified: opens a web search"'}>${co.url ? "Website" : "Find website"} ↗</a>`);
+  const where = [co.loc, inIndia && co.abroad ? `also ${co.abroad}` : "", !inIndia && co.india ? `also ${co.india}, India` : ""].filter(Boolean).join(" · ");
+  const letter = esc((co.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase());
+  return `<li><span class="co-logo"><b class="lt">${letter}</b><img alt="" data-n="${esc(co.name)}" data-l="${esc(co.logo || "")}"></span>`
+    + `<span class="co-name">${esc(co.name)}${co.band && co.band !== ch.band ? `<i>${co.band}</i>` : ""}${where ? `<small>${esc(where)}</small>` : ""}${co.head ? `<small>${esc(co.head.role)}: <b>${esc(co.head.name)}</b></small>` : ""}</span>`
+    + `<span class="co-links">${links.join("")}</span></li>`;
+}
 function openPanel(bid, sid) {
   const tree = S.tree, bi = tree.branches.findIndex(b => b.id === bid), b = tree.branches[bi], c = colorOf(b, bi);
   const band = id => tree.bands.find(x => x.id === id) || { range: "" };
@@ -516,7 +656,7 @@ function openPanel(bid, sid) {
     b.children.map(ch => `<div class="card ${ch.id === sid ? "focus" : ""}" data-id="${ch.id}" style="--c:${c}">
       <h3><span>${ch.label}</span><span class="band">${ch.band || ""}<small>${band(ch.band).range}</small></span></h3>
       <dl>${tree.attributes.filter(a => ch[a.key]).map(a => `<dt>${a.label}</dt><dd>${ch[a.key]}</dd>`).join("")}</dl>
-      <div class="chips">${(ch.companies || []).map(co => `<span class="chip"><img alt="" data-n="${co.name}" data-l="${co.logo || ""}">${co.name}${co.band && co.band !== ch.band ? `<i>${co.band}</i>` : ""}</span>`).join("")}</div>
+      <ul class="co-list">${(ch.companies || []).map(co => companyRow(co, ch, tree)).join("")}</ul>
     </div>`).join("");
   chipLogos($("panelBody"));
   $("panel").classList.add("open");
@@ -549,12 +689,21 @@ function alertish(msg) { $("counter").textContent = msg; }
 /* ---------- data loading ---------- */
 function useTree(tree) {
   if (!tree || !tree.branches) return alertish("Not a Career Tree data file");
-  S.tree = tree; S.steps = buildSteps(tree); render(); go(0);
+  S.tree = tree; S.steps = buildSteps(tree); fillDatasets(); fillRegions(); render(); go(0);
 }
+/* disciplines in the dropdown; regions of the same discipline (e.g. India / Outside India) in the toggle under the title */
+const disciplines = () => [...new Set(S.trees.map(t => t.meta.discipline))];
 function fillDatasets() {
-  $("dataset").innerHTML = S.trees.map((t, i) => `<option value="${i}">${t.meta.discipline} · ${t.meta.region || ""}</option>`).join("");
+  $("dataset").innerHTML = disciplines().map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
+  if (S.tree) $("dataset").value = S.tree.meta.discipline;
 }
-function addTree(t) { S.trees.push(t); fillDatasets(); $("dataset").value = S.trees.length - 1; useTree(t); }
+function fillRegions() {
+  const same = S.trees.filter(t => t.meta.discipline === S.tree.meta.discipline), box = $("region");
+  box.classList.toggle("on", same.length > 1); document.body.classList.toggle("has-region", same.length > 1);
+  box.innerHTML = same.length > 1 ? same.map(t => `<button role="tab" aria-selected="${t === S.tree}" data-i="${S.trees.indexOf(t)}">${esc(t.meta.region || t.meta.id)}</button>`).join("") : "";
+  box.querySelectorAll("button").forEach(b => b.onclick = e => { e.currentTarget.blur(); useTree(S.trees[+b.dataset.i]); });
+}
+function addTree(t) { S.trees.push(t); useTree(t); }
 function readFile(f) { const r = new FileReader(); r.onload = () => { try { addTree(JSON.parse(r.result)); } catch (e) { alertish("Could not read JSON: " + e.message); } }; r.readAsText(f); }
 
 /* ---------- input ---------- */
@@ -573,7 +722,7 @@ function onKey(e) {
   else if (k === "?") $("help").classList.toggle("open");
 }
 function toggleFS() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
-function themeLabel() { $("themeBtn").textContent = document.documentElement.dataset.theme === "dark" ? "☀ Light mode" : "☾ Dark mode"; }
+function themeLabel() { const dk = document.documentElement.dataset.theme === "dark", b = $("themeBtn"); b.innerHTML = dk ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>'; b.setAttribute("aria-label", dk ? "Switch to light mode" : "Switch to dark mode"); b.title = (dk ? "Light mode" : "Dark mode") + " (T)"; }
 function toggleTheme() {
   const h = document.documentElement; h.dataset.theme = h.dataset.theme === "dark" ? "light" : "dark"; themeLabel();
   // text colours are chosen per theme, so redraw everything, including an open close-up
@@ -583,12 +732,24 @@ document.addEventListener("keydown", onKey);
 // on-screen Back / Next: blur after click so Space or Enter on the keyboard never triggers a second step
 $("prev").onclick = e => { e.currentTarget.blur(); go(S.step - 1); };
 $("next").onclick = e => { e.currentTarget.blur(); go(S.step + 1); };
-$("dataset").onchange = e => useTree(S.trees[+e.target.value]);
-$("load").onclick = () => $("file").click();
+$("dataset").onchange = e => { const d = e.target.value, same = S.trees.filter(t => t.meta.discipline === d); useTree(same.find(t => t.meta.region === "India") || same[0]); };
 $("file").onchange = e => e.target.files[0] && readFile(e.target.files[0]);
 $("notesBtn").onclick = openNotes; $("themeBtn").onclick = toggleTheme; $("fsBtn").onclick = toggleFS;
 $("helpBtn").onclick = () => $("help").classList.toggle("open"); $("help").onclick = () => $("help").classList.remove("open");
 document.querySelector("#panel .close").onclick = () => zoomOut();
+// drag the panel's left edge to change its width; the close-up tree takes the rest
+{ const grip = $("panelGrip"), root = document.documentElement, panel = $("panel");
+  let pw = 0; try { pw = +localStorage.getItem("ct-pw") || 0; } catch (e) {}
+  const place = () => { grip.style.left = (innerWidth - panel.getBoundingClientRect().width) + "px"; };
+  const set = w => { pw = Math.round(Math.max(360, Math.min(innerWidth - 420, w))); root.style.setProperty("--pw", pw + "px"); place(); };
+  if (pw) set(pw); else place();
+  addEventListener("resize", () => pw ? set(pw) : place());
+  grip.addEventListener("pointerdown", e => { e.preventDefault(); grip.setPointerCapture(e.pointerId); grip.classList.add("on"); document.body.classList.add("resizing"); });
+  grip.addEventListener("pointermove", e => { if (grip.classList.contains("on")) set(innerWidth - e.clientX); });
+  const end = () => { if (!grip.classList.contains("on")) return; grip.classList.remove("on"); document.body.classList.remove("resizing"); try { localStorage.setItem("ct-pw", pw); } catch (e) {} };
+  grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
+  grip.addEventListener("dblclick", () => { pw = 0; root.style.removeProperty("--pw"); place(); try { localStorage.removeItem("ct-pw"); } catch (e) {} });
+}
 addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("dragover"); });
 addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("dragover"); });
 addEventListener("drop", e => { e.preventDefault(); document.body.classList.remove("dragover"); e.dataTransfer.files[0] && readFile(e.dataTransfer.files[0]); });
@@ -624,7 +785,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
 if (!S.trees.length) { alertish("No data files found in /data"); return; }
 themeLabel(); fillDatasets(); useTree(S.trees[0]);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const st = S.step, z = S.zoomed; render(); go(st); if (z && !S.zoomed) zoomTo(z); });
 })();
+
+const tipEl = Object.assign(document.createElement("div"), { id: "tip" }); document.body.appendChild(tipEl);
+function tipShow(e, co, sub, c) {
+  tipEl.innerHTML = "";
+  const src = window.logoFor && logoFor(co);
+  if (src) { const im = document.createElement("img"); im.src = src; im.alt = ""; tipEl.append(im); }
+  const tx = document.createElement("div"); tx.append(co.name);
+  const sm = document.createElement("small"), sw = document.createElement("i"); sw.style.background = c; sm.append(sw, sub); tx.append(sm);
+  tipEl.append(tx); tipEl.classList.add("on"); tipMove(e);
+}
+function tipMove(e) {
+  const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+  let x = e.clientX + 16, y = e.clientY - h - 12;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 16; if (y < 8) y = e.clientY + 20;
+  tipEl.style.left = x + "px"; tipEl.style.top = y + "px";
+}
+function tipHide() { tipEl.classList.remove("on"); }
 </script>
 <script src="https://smkarmarkar.github.io/bugbox/bugbox.js" defer></script>
 </body>

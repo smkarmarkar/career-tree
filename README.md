@@ -31,7 +31,8 @@ The bug button (bottom right, draggable) is [Bugbox](https://github.com/smkarmar
 ```
 index.html              Renderer: layout, drawing, presentation controls, theme
 data/ux-india.js        UX Design tree (India)
-data/industrial-india.js Industrial Design tree (placeholder, not researched)
+data/industrial-india.js Industrial Design tree (India)
+data/industrial-global.js Industrial Design tree (Global)
 logos/                  Optional company logo files (see logos/README.txt)
 ```
 
