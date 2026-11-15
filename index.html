@@ -160,11 +160,25 @@ body.has-region #focus{top:172px;height:calc(100% - 254px)}
 #help kbd{display:inline-flex;align-items:center;height:22px;padding:0 6px;border-radius:4px;background:var(--muted);color:var(--ink-2);font:500 12px var(--font)}
 #drop{position:fixed;inset:0;display:none;place-items:center;font-size:24px;font-weight:600;background:rgba(0,0,0,.5);color:#fff;z-index:10}
 body.dragover #drop{display:grid}
+/* ============ FOREST: closing slide, illustration only (nothing in it is clickable) ============ */
+#forest{position:fixed;left:0;right:0;top:120px;bottom:72px;opacity:0;pointer-events:none;transition:opacity .6s;z-index:1}
+#forest svg{width:100%;height:100%;display:block}
+body.forest #forest{opacity:1;pointer-events:auto;cursor:default}
+body.forest #stage,body.forest #focus,body.forest #legend,body.forest #region{opacity:0!important;pointer-events:none!important}
+body.forest #panel{transform:translateX(102%)}
+#forest text{font-family:var(--font);fill:var(--ink)}
+#forest .ft{opacity:0;transform:translateY(24px);transform-box:fill-box;transition:opacity .7s,transform .9s cubic-bezier(.2,.7,.2,1)}
+body.forest #forest .ft{opacity:1;transform:none;transition-delay:var(--d)}
+#forest .ft-name{font-weight:700;letter-spacing:-.02em;paint-order:stroke;stroke:var(--bg);stroke-width:10px;stroke-linejoin:round}
+#forest .ft-name.back{font-weight:600;fill:var(--ink-2)} body.forest #forest .ft-name.back{opacity:.9}
+#forest .back{opacity:.55} body.forest #forest .ft.back{opacity:.55}
+#forest .you{font-weight:600;fill:var(--ink-2);paint-order:stroke;stroke:var(--bg);stroke-width:10px}
 </style>
 </head>
 <body>
 <svg id="stage" xmlns="http://www.w3.org/2000/svg"><defs id="defs"></defs><g id="world"></g></svg>
 <svg id="focus" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+<div id="forest" aria-label="Design is a forest: many career trees"></div>
 <header><h1 id="title"></h1><p id="subtitle"></p><div id="region" role="tablist" aria-label="Region"></div></header>
 <div id="legend"></div>
 <nav id="nav" aria-label="Slides"><button id="prev" aria-label="Previous step">‹ Back</button><span id="counter"></span><button id="next" aria-label="Next step">Next ›</button></nav>
@@ -181,7 +195,7 @@ body.dragover #drop{display:grid}
 <div id="help"><div>
   <b>Presenting</b><br>
   <kbd>→</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd> next step &nbsp; <kbd>←</kbd> <kbd>PgUp</kbd> back<br>
-  <kbd>1</kbd>–<kbd>9</kbd> jump to branch &nbsp; <kbd>Home</kbd> start &nbsp; <kbd>End</kbd> full tree<br>
+  <kbd>1</kbd>–<kbd>9</kbd> jump to branch &nbsp; <kbd>Home</kbd> start &nbsp; <kbd>End</kbd> forest (last slide)<br>
   Click a branch or box to zoom &nbsp; <kbd>Esc</kbd> zoom out<br>
   Scroll to zoom, drag to pan<br>
   <kbd>P</kbd> presenter notes window &nbsp; <kbd>F</kbd> fullscreen &nbsp; <kbd>T</kbd> dark / light mode<br>
@@ -565,16 +579,64 @@ $("focus").addEventListener("click", () => zoomOut());
 
 /* ---------- steps ---------- */
 function buildSteps(tree) {
-  if (tree.steps && tree.steps.length) return [{ view: "intro" }, ...tree.steps];
+  const forest = { view: "forest", notes: "Close: UX is one tree in a forest of design disciplines. Skills, people and companies cross between them." };
+  if (tree.steps && tree.steps.length) return [{ view: "intro" }, ...tree.steps, forest];
   const s = [{ view: "intro", notes: tree.meta.notes || `Introduce the ${tree.meta.discipline} tree. ${tree.meta.disclaimer || ""}` }];
   tree.branches.forEach(b => { s.push({ branch: b.id, view: "reveal" }); s.push({ branch: b.id, view: "detail" }); });
   s.push({ view: "overview", notes: "Full tree. Invite questions, click any branch to revisit." });
+  s.push(forest);
   return s;
+}
+/* ---------- closing slide: a forest of design disciplines (illustration only, not clickable) ---------- */
+const FOREST = {
+  title: "Design is a forest",
+  subtitle: "Every design discipline is a tree of its own. You can grow along one, or cross to another.",
+  back: [["Interaction Design", 2], ["Service Design", 7], ["Game Design", 4], ["Animation & Motion", 3], ["Textile Design", 6], ["Design Research", 5]],
+  front: [["Communication Design", 3], ["Fashion Design", 4], ["UX Design", 2], ["Industrial Design", 1], ["Interior & Spatial Design", 5]]
+};
+function seeded(str) { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls) {
+  const R = seeded(name), c = `var(--b${hue})`, g = el("g", { class: "ft " + cls, style: `--d:${delay}s` }, parent);
+  const h = 190 * s, bw = 84 * s, tw = 52 * s, top = gy - h;
+  const n = 5 + Math.floor(R() * 3), limbs = el("g", {}, g), leaves = el("g", {}, g);
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1), a = rad(-155 + t * 130 + (R() - .5) * 10);
+    const len = s * 250 * (.6 + .5 * Math.sin(t * Math.PI)) * (.9 + R() * .2), w = tw / n * 1.6;
+    const sx = cx - tw / 2 + tw * (i + .5) / n, S0 = [sx, top + 30 * s], E = [sx + Math.cos(a) * len, top + Math.sin(a) * len];
+    el("path", { fill: c, d: taper([S0, [sx, top - len * .5], E], w, w * .45) }, limbs);
+    const k = 2 + Math.floor(R() * 2);
+    for (let j = 0; j < k; j++) {
+      const b = a + rad((j - (k - 1) / 2) * 32 + (R() - .5) * 10), l = s * (40 + R() * 28), r = s * (11 + R() * 8);
+      const L = [E[0] + Math.cos(b) * l, E[1] + Math.sin(b) * l];
+      el("line", { x1: E[0], y1: E[1], x2: L[0], y2: L[1], stroke: c, "stroke-width": 4 * s, "stroke-linecap": "round" }, limbs);
+      el("circle", { cx: L[0], cy: L[1], r, fill: R() < .3 ? c : "var(--panel)", stroke: c, "stroke-width": 3.5 * s }, leaves);
+    }
+  }
+  // trunk on top of the limb roots, so they grow out of it
+  el("path", { fill: "var(--trunk)", d: `M${cx - bw / 2},${gy} C${cx - tw * .55},${gy - h * .45} ${cx - tw / 2},${gy - h * .7} ${cx - tw / 2},${top} L${cx + tw / 2},${top} C${cx + tw / 2},${gy - h * .7} ${cx + tw * .55},${gy - h * .45} ${cx + bw / 2},${gy} Z` }, g);
+  const t = el("text", { class: "ft ft-name " + cls, style: `--d:${delay}s`, x: cx, y: gy + 46 * s, "text-anchor": "middle", "font-size": 32 * s }, labels); t.textContent = name;
+}
+function renderForest() {
+  const W = 2600, box = $("forest");
+  box.innerHTML = ""; const f = el("svg", { preserveAspectRatio: "xMidYMid meet", role: "img", "aria-label": FOREST.title }, box);
+  const ground = y => el("path", { d: `M-40,${y} Q${W / 2},${y - 22} ${W + 40},${y}`, stroke: "var(--ground)", "stroke-width": 4, fill: "none" }, f);
+  const backG = el("g", {}, f); ground(1180); const frontG = el("g", {}, f), labels = el("g", {}, f);
+  el("path", { d: `M-40,560 Q${W / 2},542 ${W + 40},560`, stroke: "var(--ground)", "stroke-width": 3, fill: "none", opacity: .6 }, backG);
+  const bk = FOREST.back.length, fr = FOREST.front.length;
+  FOREST.back.forEach(([n, h], i) => forestTree(backG, labels, n, h, W * (i + .5) / bk, 560, .7, .15 + i * .08, "back"));
+  FOREST.front.forEach(([n, h], i) => forestTree(frontG, labels, n, h, W * (i + .5) / fr, 1180, 1, .6 + i * .1, ""));
+  // the individual, standing in the clearing between two trees
+  const p = el("g", { class: "ft", style: "--d:1.3s" }, f), px = W * 3 / fr, py = 1180;
+  el("circle", { cx: px, cy: py - 100, r: 17, fill: "var(--ink)" }, p);
+  el("path", { d: `M${px - 23},${py} L${px - 18},${py - 56} Q${px},${py - 82} ${px + 18},${py - 56} L${px + 23},${py} Z`, fill: "var(--ink)" }, p);
+  const y = el("text", { class: "you", x: px, y: py + 40, "text-anchor": "middle", "font-size": 26 }, labels); y.textContent = "You";
+  const bb = f.getBBox(), pad = 20; f.setAttribute("viewBox", `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
 }
 function revealedUpTo(i) {
   const set = new Set();
   S.steps.slice(0, i + 1).forEach(st => st.branch && set.add(st.branch));
-  if (S.steps[i].view === "overview") S.tree.branches.forEach(b => set.add(b.id));
+  if (["overview", "forest"].includes(S.steps[i].view)) S.tree.branches.forEach(b => set.add(b.id));
   return set;
 }
 function go(i) {
@@ -587,12 +649,17 @@ function go(i) {
     g.classList.toggle("dim", st.view === "reveal" && open.has(g.dataset.id) && g.dataset.id !== st.branch);
   });
   if (st.view === "detail") zoomTo(st.branch, null, true); else zoomOut(true);
+  const fo = st.view === "forest";
+  if (fo && !$("forest").firstChild) renderForest();
+  document.body.classList.toggle("forest", fo);
+  $("title").textContent = fo ? FOREST.title : S.tree.meta.title;
+  $("subtitle").textContent = fo ? FOREST.subtitle : [S.tree.meta.subtitle, S.tree.meta.asOf].filter(Boolean).join(" · ");
   $("counter").textContent = `${i + 1} / ${S.steps.length}`;
   $("prev").disabled = i === 0; $("next").disabled = i === S.steps.length - 1;
   updateNotes();
 }
 const branchById = id => S.tree.branches.find(b => b.id === id);
-function stepTitle(st) { if (!st) return "End"; if (st.view === "intro") return "Intro: " + S.tree.meta.discipline; if (st.view === "overview") return "Full tree"; const b = branchById(st.branch); return (b ? b.label : st.branch) + (st.view === "detail" ? " (detail)" : ""); }
+function stepTitle(st) { if (!st) return "End"; if (st.view === "intro") return "Intro: " + S.tree.meta.discipline; if (st.view === "overview") return "Full tree"; if (st.view === "forest") return "Forest of design careers"; const b = branchById(st.branch); return (b ? b.label : st.branch) + (st.view === "detail" ? " (detail)" : ""); }
 function stepNotes(st) { if (st.notes) return st.notes; const b = branchById(st.branch) || {}; return st.view === "detail" ? (b.detailNotes || b.notes || "") : (b.notes || b.summary || ""); }
 
 /* ---------- zoom / viewBox ---------- */
