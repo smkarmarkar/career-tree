@@ -169,6 +169,13 @@ body.forest #panel{transform:translateX(102%)}
 #forest .ft{opacity:0;transform:translateY(24px);transform-box:fill-box;transition:opacity .7s,transform .9s cubic-bezier(.2,.7,.2,1)}
 body.forest #forest .ft{opacity:1;transform:none;transition-delay:var(--d)}
 #forest .ft-name{font-weight:700;letter-spacing:-.02em;paint-order:stroke;stroke:var(--bg);stroke-width:10px;stroke-linejoin:round}
+#forest .ft-tag{font-weight:600;paint-order:stroke;stroke:var(--bg);stroke-width:8px;stroke-linejoin:round}
+/* the bush grows up from the ground when the slide opens, then its buds keep swelling: it is still growing */
+#forest .ft.bush{transform:scale(.2);transform-origin:50% 100%}
+body.forest #forest .ft.bush{transform:none;transition:opacity .5s var(--d),transform 2.2s cubic-bezier(.2,.8,.2,1) var(--d)}
+#forest .bud{transform-box:fill-box;transform-origin:center;animation:bud 2.4s ease-in-out infinite;animation-delay:var(--bd)}
+@keyframes bud{0%,100%{transform:scale(.6)}50%{transform:scale(1.2)}}
+@media (prefers-reduced-motion:reduce){#forest .bud{animation:none}#forest .ft.bush{transform:none}}
 </style>
 </head>
 <body>
@@ -587,8 +594,23 @@ function buildSteps(tree) {
 const FOREST = {
   title: "Design is a forest",
   subtitle: "Every design discipline is a tree of its own. You can grow along one, or cross to another.",
-  back: [["Information Design", 2, [[1], [1], [1], [1]]], ["Service Design", 7], ["Game Design", 4], ["Animation & Motion", 3], ["Textile Design", 6], ["Design Research", 5]],
-  front: [["Communication Design", 3], ["Fashion Design", 4], ["Product Design", 2], ["Industrial Design", 1], ["Interior & Spatial Design", 5]]
+  // form = crown silhouette (see FORMS); fixed = hand-set limbs (leaves per twig) instead of real or random data
+  back: [{ n: "Information Design", hue: 2, form: "vase", fixed: [[1], [1], [1], [1]] }, { n: "Service Design", hue: 7, form: "round" },
+    { n: "Game Design", hue: 4, form: "umbrella" }, { n: "Animation & Motion", hue: 3, form: "cone" },
+    { n: "Textile Design", hue: 6, form: "column" }, { n: "Design Research", hue: 5, form: "oval" }],
+  front: [{ n: "Communication Design", hue: 3, form: "round" }, { n: "Fashion Design", hue: 4, form: "cone" },
+    { n: "Product Design", hue: 2, form: "round" }, { n: "Builders & Makers", hue: 7, bush: true, tag: "New · growing fast" },
+    { n: "Industrial Design", hue: 1, form: "vase" }, { n: "Interior & Spatial Design", hue: 5, form: "umbrella" }]
+};
+/* Crown silhouettes, after real trees: spread = half the fan of limbs (degrees from vertical), side / center = limb length
+   at the edge / middle of the fan, hf = trunk height, tw = how wide twigs and leaves fan out */
+const FORMS = {
+  round:    { spread: 62, side: .62, center: 1.07, hf: 1,    tw: 1 },
+  umbrella: { spread: 80, side: 1.05, center: .5, hf: 1.45, tw: .75 },
+  cone:     { spread: 30, side: .45, center: 1.45, hf: .7,  tw: .5 },
+  column:   { spread: 11, side: 1.3, center: 1.6, hf: .45,  tw: .3 },
+  oval:     { spread: 40, side: .9, center: 1.3, hf: .9,    tw: .65 },
+  vase:     { spread: 52, side: 1.15, center: .9, hf: 1.05, tw: .8 }
 };
 function seeded(str) { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
   return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -602,17 +624,17 @@ function forestShape(name, hue, fixed) {
   const R = seeded(name + "#shape"), n = 3 + Math.floor(R() * 7), dense = .35 + R() * .9;
   return Array.from({ length: n }, () => ({ c: `var(--b${hue})`, subs: Array.from({ length: 1 + Math.floor(R() * 4) }, () => 1 + Math.floor(R() * 7 * dense)) }));
 }
-function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls, slot, fixed) {
-  const R = seeded(name), g = el("g", { class: "ft " + cls, style: `--d:${delay}s` }, parent);
+function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls, slot, fixed, form) {
+  const Fm = FORMS[form] || FORMS.round, R = seeded(name), g = el("g", { class: "ft " + cls, style: `--d:${delay}s` }, parent);
   const shape = forestShape(name, hue, fixed), total = shape.reduce((m, l) => m + l.subs.reduce((x, y) => x + y, 0), 0);
   // trunk height varies tree to tree: some short, some tall (real trees grow with their size)
-  const hf = forestShape.real ? .85 + Math.min(.45, total / 180) : .55 + R() * .8;
+  const hf = Fm.hf * (forestShape.real ? .85 + Math.min(.45, total / 180) : .8 + R() * .4);
   const h = 190 * s * hf, tw = Math.min(110, 40 + total * .55) * s, top = gy - h, reach = (.85 + Math.min(.35, total / 250)) * (.92 + R() * .16);
   const limbs = el("g", {}, g), leaves = el("g", {}, g), n = shape.length;
   let off = cx - tw / 2;
   shape.forEach((L, i) => {
     const cnt = L.subs.reduce((x, y) => x + y, 0), w = tw * cnt / total, t = n === 1 ? .5 : i / (n - 1);
-    const a = rad(-152 + t * 124 + (R() - .5) * 8), len = s * 230 * reach * (.62 + .45 * Math.sin(t * Math.PI)) * (.9 + R() * .2);
+    const a = rad(-90 + (2 * t - 1) * Fm.spread + (R() - .5) * Fm.spread * .12), len = s * 230 * reach * (Fm.side + (Fm.center - Fm.side) * Math.sin(t * Math.PI)) * (.9 + R() * .2);
     const sx = off + w / 2; off += w;
     const E = [sx + Math.cos(a) * len, top + Math.sin(a) * len];
     // each limb fades from the trunk colour (at the trunk's top edge) into its own colour
@@ -621,10 +643,10 @@ function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls, slot, fixe
     el("path", { fill: `url(#${gid})`, d: taper([[sx, top + 1], [sx, top - len * .5], E], w + .6, Math.max(2.5 * s, w * .5)) }, limbs);
     const m = L.subs.length;
     L.subs.forEach((k, j) => {
-      const b = a + rad(m === 1 ? 0 : (j / (m - 1) - .5) * Math.min(80, 28 * m)) + rad((R() - .5) * 8);
+      const b = a + rad(m === 1 ? 0 : (j / (m - 1) - .5) * Math.min(80, 28 * m) * Fm.tw) + rad((R() - .5) * 8);
       const sl = s * (36 + R() * 30), P = [E[0] + Math.cos(b) * sl, E[1] + Math.sin(b) * sl];
       el("line", { x1: E[0], y1: E[1], x2: P[0], y2: P[1], stroke: L.c, "stroke-width": Math.max(2.5, Math.min(6, 1.5 + k * .5)) * s, "stroke-linecap": "round" }, limbs);
-      const r = s * (k > 5 ? 7 : k > 2 ? 9 : 12), spread = Math.min(150, 34 * k);
+      const r = s * (k > 5 ? 7 : k > 2 ? 9 : 12), spread = Math.min(150, 34 * k) * Math.max(.45, Fm.tw);
       for (let q = 0; q < k; q++) {
         const c2 = b + rad(k === 1 ? 0 : (q / (k - 1) - .5) * spread), d = r * 1.6 + s * 8 + (q % 2) * r * 1.3;
         const Q = [P[0] + Math.cos(c2) * d, P[1] + Math.sin(c2) * d];
@@ -641,15 +663,41 @@ function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls, slot, fixe
   el("path", { fill: "var(--trunk)", d: `M${cx - bw / 2},${gy} C${cx - tk * .55},${gy - h * .45} ${cx - tk / 2},${gy - h * .7} ${cx - tk / 2},${top} L${cx + tk / 2},${top} C${cx + tk / 2},${gy - h * .7} ${cx + tk * .55},${gy - h * .45} ${cx + bw / 2},${gy} Z` }, g);
   const t = el("text", { class: "ft ft-name " + cls, style: `--d:${delay}s`, x: cx, y: gy + 46 * s, "text-anchor": "middle", "font-size": 32 * s }, labels); t.textContent = name;
 }
+/* a low, young bush: many stems straight from the ground, small fresh leaves, buds that keep popping (it is growing fast) */
+function forestBush(parent, labels, B, cx, gy, s, delay) {
+  const R = seeded(B.n), c = `var(--b${B.hue})`, g = el("g", { class: "ft bush", style: `--d:${delay}s` }, parent);
+  const gid = "fg-bush", lg = el("linearGradient", { id: gid, gradientUnits: "userSpaceOnUse", x1: 0, y1: gy, x2: 0, y2: gy - 90 * s }, g);
+  el("stop", { offset: "0", style: "stop-color:var(--trunk)" }, lg); el("stop", { offset: "1", style: `stop-color:${c}` }, lg);
+  const stems = el("g", {}, g), leaves = el("g", {}, g), n = 11;
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1), a = rad(-90 + (2 * t - 1) * 72 + (R() - .5) * 8), len = s * (70 + 70 * Math.sin(t * Math.PI)) * (.85 + R() * .3);
+    const sx = cx + (t - .5) * 26 * s, E = [sx + Math.cos(a) * len, gy + Math.sin(a) * len];
+    el("path", { fill: `url(#${gid})`, d: taper([[sx, gy], [sx + Math.cos(a) * len * .3, gy - len * .55], E], 7 * s, 2.5 * s) }, stems);
+    for (let q = 0; q < 3; q++) {
+      const b = a + rad((q - 1) * 38), d = s * (16 + R() * 10), L = [E[0] + Math.cos(b) * d, E[1] + Math.sin(b) * d], r = s * (6 + R() * 4);
+      el("line", { x1: E[0], y1: E[1], x2: L[0], y2: L[1], stroke: c, "stroke-width": 2.2 * s, "stroke-linecap": "round" }, stems);
+      const bud = R() < .4;
+      el("circle", { cx: L[0], cy: L[1], r, fill: bud || R() < .3 ? c : "var(--panel)", stroke: c, "stroke-width": 2.4 * s, class: bud ? "bud" : "", style: `--bd:${(R() * 2.4).toFixed(2)}s` }, leaves);
+    }
+  }
+  const t = el("text", { class: "ft ft-name", style: `--d:${delay}s`, x: cx, y: gy + 46 * s, "text-anchor": "middle", "font-size": 28 * s }, labels); t.textContent = B.n;
+  const tg = el("text", { class: "ft ft-tag", style: `--d:${delay}s;fill:${c}`, x: cx, y: gy + 80 * s, "text-anchor": "middle", "font-size": 22 * s }, labels); tg.textContent = B.tag;
+}
 function renderForest() {
   const W = 2600, box = $("forest");
   box.innerHTML = ""; const f = el("svg", { preserveAspectRatio: "xMidYMid meet", role: "img", "aria-label": FOREST.title }, box);
   const ground = y => el("path", { d: `M-40,${y} Q${W / 2},${y - 22} ${W + 40},${y}`, stroke: "var(--ground)", "stroke-width": 4, fill: "none" }, f);
   const backG = el("g", {}, f); ground(1180); const frontG = el("g", {}, f), labels = el("g", {}, f);
   el("path", { d: `M-40,480 Q${W / 2},462 ${W + 40},480`, stroke: "var(--ground)", "stroke-width": 4, fill: "none" }, backG);
-  const bk = FOREST.back.length, fr = FOREST.front.length;
-  FOREST.back.forEach(([n, h, fx], i) => forestTree(backG, labels, n, h, W * (i + .5) / bk, 480, .7, .15 + i * .08, "back", W / bk * .96, fx));
-  FOREST.front.forEach(([n, h], i) => forestTree(frontG, labels, n, h, W * (i + .5) / fr, 1180, 1, .6 + i * .1, "", W / fr * .96));
+  // each row shares the width by weight: a tree takes a full slot, a bush a narrower one
+  const row = (items, gy, sc, d0, dd, G, cls) => {
+    const wt = it => it.bush ? .62 : 1, tot = items.reduce((m, it) => m + wt(it), 0); let x = 0;
+    items.forEach((it, i) => { const w = W * wt(it) / tot, cx = x + w / 2; x += w;
+      if (it.bush) forestBush(G, labels, it, cx, gy, sc, d0 + i * dd);
+      else forestTree(G, labels, it.n, it.hue, cx, gy, sc, d0 + i * dd, cls, w * .96, it.fixed, it.form); });
+  };
+  row(FOREST.back, 480, .7, .15, .08, backG, "back");
+  row(FOREST.front, 1180, 1, .6, .1, frontG, "");
   const bb = f.getBBox(), pad = 20; f.setAttribute("viewBox", `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
 }
 function revealedUpTo(i) {
