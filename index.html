@@ -638,7 +638,7 @@ function companyRow(co, ch, tree) {
   const indiaPlace = inIndia ? (co.loc || "India") : co.india, abroadPlace = inIndia ? co.abroad : co.loc;
   const country = p => p ? p.split(",").pop().trim() : "";
   const links = [];
-  if (indiaPlace) links.push(`<a href="${liPeople(`${role} ${co.name} India`)}" target="_blank" rel="noopener">Designers in India ↗</a>`);
+  if (indiaPlace) links.push(`<a href="${liPeople(`${role} ${co.name} India`)}" target="_blank" rel="noopener">Search designers on LinkedIn ↗</a>`);
   if (abroadPlace) links.push(`<a href="${liPeople(`${role} ${co.name} ${country(abroadPlace)}`)}" target="_blank" rel="noopener">Designers in ${esc(country(abroadPlace))} ↗</a>`);
   const site = co.url || "https://www.google.com/search?q=" + encodeURIComponent(co.name + " official website");
   links.push(`<a href="${esc(site)}" target="_blank" rel="noopener"${co.url ? "" : ' title="Website not verified: opens a web search"'}>${co.url ? "Website" : "Find website"} ↗</a>`);
