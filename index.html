@@ -93,6 +93,8 @@ body.idle #controls{opacity:0;pointer-events:none}
 .co-logo img{width:36px;height:36px;object-fit:contain;padding:4px;background:#fff;border-radius:8px;display:none} .co-logo img.ok{display:block}
 .co-logo .lt{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--c,var(--ink));color:#fff} .co-logo:has(img.ok) .lt{display:none}
 .co-name{flex:1 1 140px;min-width:0;font-size:16px;font-weight:600;line-height:1.25}
+.co-name a.co-site{color:inherit;text-decoration:underline;text-decoration-color:var(--c);text-decoration-thickness:2px;text-underline-offset:4px}
+.co-name a.co-site:hover{color:var(--c)}
 .co-name i{font-style:normal;color:var(--c);margin-left:6px;font-weight:700}
 .co-name small{display:block;font-size:13px;font-weight:400;color:var(--ink-2);margin-top:2px}
 .co-name small b{color:var(--ink);font-weight:600}
@@ -640,12 +642,11 @@ function companyRow(co, ch, tree) {
   const links = [];
   if (indiaPlace) links.push(`<a href="${liPeople(`${role} ${co.name} India`)}" target="_blank" rel="noopener">Search designers on LinkedIn ↗</a>`);
   if (abroadPlace) links.push(`<a href="${liPeople(`${role} ${co.name} ${country(abroadPlace)}`)}" target="_blank" rel="noopener">Designers in ${esc(country(abroadPlace))} ↗</a>`);
-  const site = co.url || "https://www.google.com/search?q=" + encodeURIComponent(co.name + " official website");
-  links.push(`<a href="${esc(site)}" target="_blank" rel="noopener"${co.url ? "" : ' title="Website not verified: opens a web search"'}>${co.url ? "Website" : "Find website"} ↗</a>`);
+  const name = co.url ? `<a class="co-site" href="${esc(co.url)}" target="_blank" rel="noopener" title="Open ${esc(co.name)} website">${esc(co.name)}</a>` : esc(co.name);
   const where = [co.loc, inIndia && co.abroad ? `also ${co.abroad}` : "", !inIndia && co.india ? `also ${co.india}, India` : ""].filter(Boolean).join(" · ");
   const letter = esc((co.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase());
   return `<li><span class="co-logo"><b class="lt">${letter}</b><img alt="" data-n="${esc(co.name)}" data-l="${esc(co.logo || "")}"></span>`
-    + `<span class="co-name">${esc(co.name)}${co.band && co.band !== ch.band ? `<i>${co.band}</i>` : ""}${where ? `<small>${esc(where)}</small>` : ""}${co.head ? `<small>${esc(co.head.role)}: <b>${esc(co.head.name)}</b></small>` : ""}</span>`
+    + `<span class="co-name">${name}${co.band && co.band !== ch.band ? `<i>${co.band}</i>` : ""}${where ? `<small>${esc(where)}</small>` : ""}${co.head ? `<small>${esc(co.head.role)}: <b>${esc(co.head.name)}</b></small>` : ""}</span>`
     + `<span class="co-links">${links.join("")}</span></li>`;
 }
 function openPanel(bid, sid) {

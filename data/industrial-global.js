@@ -3,7 +3,7 @@
    Company fields:
      loc     main design studio outside India (shown in the close-up)
      india   design presence in India, if any (adds an India LinkedIn search link)
-     url     company website (shown as "Website" in the side panel)
+     url     company website (the company name links to it in the side panel)
      li      LinkedIn company page, only where the address was seen in search results
      head    { name, role, src } only where press names the current design leader
      src     evidence note (not shown on screen)
