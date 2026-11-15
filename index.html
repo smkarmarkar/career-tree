@@ -594,28 +594,52 @@ const FOREST = {
 };
 function seeded(str) { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
   return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls) {
-  const R = seeded(name), c = `var(--b${hue})`, g = el("g", { class: "ft " + cls, style: `--d:${delay}s` }, parent);
-  const h = 190 * s, bw = 100 * s, tw = 68 * s, top = gy - h;
-  const n = 5 + Math.floor(R() * 3), limbs = el("g", {}, g), leaves = el("g", {}, g);
-  // limbs fade from the trunk colour into the discipline colour, like the main tree
-  const gid = "fg-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), lg = el("linearGradient", { id: gid, gradientUnits: "userSpaceOnUse", x1: 0, y1: top, x2: 0, y2: top - 170 * s }, g);
-  el("stop", { offset: "0", style: "stop-color:var(--trunk)" }, lg); el("stop", { offset: "1", style: `stop-color:${c}` }, lg);
-  for (let i = 0; i < n; i++) {
-    const t = i / (n - 1), a = rad(-155 + t * 130 + (R() - .5) * 10);
-    const len = s * 250 * (.6 + .5 * Math.sin(t * Math.PI)) * (.9 + R() * .2), w = tw / n;
-    const sx = cx - tw / 2 + tw * (i + .5) / n, S0 = [sx, top + 1], E = [sx + Math.cos(a) * len, top + Math.sin(a) * len];
-    el("path", { fill: `url(#${gid})`, d: taper([S0, [sx, top - len * .5], E], w + .6, w * .5) }, limbs);
-    const k = 2 + Math.floor(R() * 2);
-    for (let j = 0; j < k; j++) {
-      const b = a + rad((j - (k - 1) / 2) * 32 + (R() - .5) * 10), l = s * (40 + R() * 28), r = s * (11 + R() * 8);
-      const L = [E[0] + Math.cos(b) * l, E[1] + Math.sin(b) * l];
-      el("line", { x1: E[0], y1: E[1], x2: L[0], y2: L[1], stroke: c, "stroke-width": 4 * s, "stroke-linecap": "round" }, limbs);
-      el("circle", { cx: L[0], cy: L[1], r, fill: R() < .3 ? c : "var(--panel)", stroke: c, "stroke-width": 3.5 * s }, leaves);
-    }
-  }
-  // trunk on top of the limb roots, so they grow out of it
-  el("path", { fill: "var(--trunk)", d: `M${cx - bw / 2},${gy} C${cx - tw * .55},${gy - h * .45} ${cx - tw / 2},${gy - h * .7} ${cx - tw / 2},${top} L${cx + tw / 2},${top} C${cx + tw / 2},${gy - h * .7} ${cx + tw * .55},${gy - h * .45} ${cx + bw / 2},${gy} Z` }, g);
+/* A forest tree is limbs -> sub-limbs -> leaves. UX and Industrial use their real data (one limb per branch in its own
+   colour, one sub-limb per sub-branch, one leaf per company, limb thickness = companies); the others get a random shape. */
+function forestShape(name, hue) {
+  const real = S.trees.find(t => t.meta.discipline === name && (t.meta.region || "India") === "India") || S.trees.find(t => t.meta.discipline === name);
+  forestShape.real = !!real;
+  if (real) return real.branches.map((b, i) => ({ c: colorOf(b, i), subs: b.children.map(ch => Math.max(1, (ch.companies || []).length)) }));
+  const R = seeded(name + "#shape"), n = 3 + Math.floor(R() * 7), dense = .35 + R() * .9;
+  return Array.from({ length: n }, () => ({ c: `var(--b${hue})`, subs: Array.from({ length: 1 + Math.floor(R() * 4) }, () => 1 + Math.floor(R() * 7 * dense)) }));
+}
+function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls, slot) {
+  const R = seeded(name), g = el("g", { class: "ft " + cls, style: `--d:${delay}s` }, parent);
+  const shape = forestShape(name, hue), total = shape.reduce((m, l) => m + l.subs.reduce((x, y) => x + y, 0), 0);
+  // trunk height varies tree to tree: some short, some tall (real trees grow with their size)
+  const hf = forestShape.real ? .85 + Math.min(.45, total / 180) : .55 + R() * .8;
+  const h = 190 * s * hf, tw = Math.min(110, 40 + total * .55) * s, top = gy - h, reach = (.85 + Math.min(.35, total / 250)) * (.92 + R() * .16);
+  const limbs = el("g", {}, g), leaves = el("g", {}, g), n = shape.length;
+  let off = cx - tw / 2;
+  shape.forEach((L, i) => {
+    const cnt = L.subs.reduce((x, y) => x + y, 0), w = tw * cnt / total, t = n === 1 ? .5 : i / (n - 1);
+    const a = rad(-152 + t * 124 + (R() - .5) * 8), len = s * 230 * reach * (.62 + .45 * Math.sin(t * Math.PI)) * (.9 + R() * .2);
+    const sx = off + w / 2; off += w;
+    const E = [sx + Math.cos(a) * len, top + Math.sin(a) * len];
+    // each limb fades from the trunk colour (at the trunk's top edge) into its own colour
+    const gid = "fg-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + i, lg = el("linearGradient", { id: gid, gradientUnits: "userSpaceOnUse", x1: 0, y1: top, x2: 0, y2: top - 170 * s }, g);
+    el("stop", { offset: "0", style: "stop-color:var(--trunk)" }, lg); el("stop", { offset: "1", style: `stop-color:${L.c}` }, lg);
+    el("path", { fill: `url(#${gid})`, d: taper([[sx, top + 1], [sx, top - len * .5], E], w + .6, Math.max(2.5 * s, w * .5)) }, limbs);
+    const m = L.subs.length;
+    L.subs.forEach((k, j) => {
+      const b = a + rad(m === 1 ? 0 : (j / (m - 1) - .5) * Math.min(80, 28 * m)) + rad((R() - .5) * 8);
+      const sl = s * (36 + R() * 30), P = [E[0] + Math.cos(b) * sl, E[1] + Math.sin(b) * sl];
+      el("line", { x1: E[0], y1: E[1], x2: P[0], y2: P[1], stroke: L.c, "stroke-width": Math.max(2.5, Math.min(6, 1.5 + k * .5)) * s, "stroke-linecap": "round" }, limbs);
+      const r = s * (k > 5 ? 7 : k > 2 ? 9 : 12), spread = Math.min(150, 34 * k);
+      for (let q = 0; q < k; q++) {
+        const c2 = b + rad(k === 1 ? 0 : (q / (k - 1) - .5) * spread), d = r * 1.6 + s * 8 + (q % 2) * r * 1.3;
+        const Q = [P[0] + Math.cos(c2) * d, P[1] + Math.sin(c2) * d];
+        el("line", { x1: P[0], y1: P[1], x2: Q[0], y2: Q[1], stroke: L.c, "stroke-width": 2 * s, "stroke-linecap": "round" }, limbs);
+        el("circle", { cx: Q[0], cy: Q[1], r, fill: R() < .3 ? L.c : "var(--panel)", stroke: L.c, "stroke-width": 2.6 * s }, leaves);
+      }
+    });
+  });
+  // shrink the crown about the trunk top so it stays in its own slot; the trunk top shrinks with it, so the edges still meet
+  const bb = el("g", {}, g); bb.append(limbs, leaves); const B = bb.getBBox();
+  const k = Math.min(1, (slot / 2) / Math.max(cx - B.x, B.x + B.width - cx));
+  bb.setAttribute("transform", `translate(${cx},${top}) scale(${k}) translate(${-cx},${-top})`);
+  const tk = tw * k, bw = Math.max(tk * 1.45, 40 * s);
+  el("path", { fill: "var(--trunk)", d: `M${cx - bw / 2},${gy} C${cx - tk * .55},${gy - h * .45} ${cx - tk / 2},${gy - h * .7} ${cx - tk / 2},${top} L${cx + tk / 2},${top} C${cx + tk / 2},${gy - h * .7} ${cx + tk * .55},${gy - h * .45} ${cx + bw / 2},${gy} Z` }, g);
   const t = el("text", { class: "ft ft-name " + cls, style: `--d:${delay}s`, x: cx, y: gy + 46 * s, "text-anchor": "middle", "font-size": 32 * s }, labels); t.textContent = name;
 }
 function renderForest() {
@@ -623,10 +647,10 @@ function renderForest() {
   box.innerHTML = ""; const f = el("svg", { preserveAspectRatio: "xMidYMid meet", role: "img", "aria-label": FOREST.title }, box);
   const ground = y => el("path", { d: `M-40,${y} Q${W / 2},${y - 22} ${W + 40},${y}`, stroke: "var(--ground)", "stroke-width": 4, fill: "none" }, f);
   const backG = el("g", {}, f); ground(1180); const frontG = el("g", {}, f), labels = el("g", {}, f);
-  el("path", { d: `M-40,560 Q${W / 2},542 ${W + 40},560`, stroke: "var(--ground)", "stroke-width": 3, fill: "none", opacity: .6 }, backG);
+  el("path", { d: `M-40,480 Q${W / 2},462 ${W + 40},480`, stroke: "var(--ground)", "stroke-width": 3, fill: "none", opacity: .6 }, backG);
   const bk = FOREST.back.length, fr = FOREST.front.length;
-  FOREST.back.forEach(([n, h], i) => forestTree(backG, labels, n, h, W * (i + .5) / bk, 560, .7, .15 + i * .08, "back"));
-  FOREST.front.forEach(([n, h], i) => forestTree(frontG, labels, n, h, W * (i + .5) / fr, 1180, 1, .6 + i * .1, ""));
+  FOREST.back.forEach(([n, h], i) => forestTree(backG, labels, n, h, W * (i + .5) / bk, 480, .7, .15 + i * .08, "back", W / bk * .96));
+  FOREST.front.forEach(([n, h], i) => forestTree(frontG, labels, n, h, W * (i + .5) / fr, 1180, 1, .6 + i * .1, "", W / fr * .96));
   const bb = f.getBBox(), pad = 20; f.setAttribute("viewBox", `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
 }
 function revealedUpTo(i) {
