@@ -1,4 +1,4 @@
-/* Career Tree data file: UX Design, India.
+/* Career Tree data file: Product Design, India.
    Swap or add files like this one. The renderer (index.html) never changes.
    Schema:
    meta        { id, discipline, title, subtitle, region, asOf, disclaimer }
@@ -16,9 +16,9 @@
 (window.CAREER_TREES = window.CAREER_TREES || []).push({
   meta: {
     id: "ux-india",
-    discipline: "UX Design",
-    title: "The UX Career Tree",
-    subtitle: "Where a UX designer can grow in India",
+    discipline: "Product Design",
+    title: "The Product Design Career Tree",
+    subtitle: "Where a product designer can grow in India",
     region: "India",
     asOf: "Nov 2026",
     disclaimer: "Companies checked Nov 2026. Salary bands are indicative fresher CTC (0 to 2 yrs) estimates, not yet verified."

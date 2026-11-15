@@ -169,8 +169,6 @@ body.forest #panel{transform:translateX(102%)}
 #forest .ft{opacity:0;transform:translateY(24px);transform-box:fill-box;transition:opacity .7s,transform .9s cubic-bezier(.2,.7,.2,1)}
 body.forest #forest .ft{opacity:1;transform:none;transition-delay:var(--d)}
 #forest .ft-name{font-weight:700;letter-spacing:-.02em;paint-order:stroke;stroke:var(--bg);stroke-width:10px;stroke-linejoin:round}
-#forest .ft-name.back{font-weight:600;fill:var(--ink-2)} body.forest #forest .ft-name.back{opacity:.9}
-#forest .back{opacity:.55} body.forest #forest .ft.back{opacity:.55}
 </style>
 </head>
 <body>
@@ -577,7 +575,7 @@ $("focus").addEventListener("click", () => zoomOut());
 
 /* ---------- steps ---------- */
 function buildSteps(tree) {
-  const forest = { view: "forest", notes: "Close: UX is one tree in a forest of design disciplines. Skills, people and companies cross between them." };
+  const forest = { view: "forest", notes: "Close: Product Design is one tree in a forest of design disciplines. Skills, people and companies cross between them." };
   if (tree.steps && tree.steps.length) return [{ view: "intro" }, ...tree.steps, forest];
   const s = [{ view: "intro", notes: tree.meta.notes || `Introduce the ${tree.meta.discipline} tree. ${tree.meta.disclaimer || ""}` }];
   tree.branches.forEach(b => { s.push({ branch: b.id, view: "reveal" }); s.push({ branch: b.id, view: "detail" }); });
@@ -589,23 +587,24 @@ function buildSteps(tree) {
 const FOREST = {
   title: "Design is a forest",
   subtitle: "Every design discipline is a tree of its own. You can grow along one, or cross to another.",
-  back: [["Interaction Design", 2], ["Service Design", 7], ["Game Design", 4], ["Animation & Motion", 3], ["Textile Design", 6], ["Design Research", 5]],
-  front: [["Communication Design", 3], ["Fashion Design", 4], ["UX Design", 2], ["Industrial Design", 1], ["Interior & Spatial Design", 5]]
+  back: [["Information Design", 2, [[2], [2]]], ["Service Design", 7], ["Game Design", 4], ["Animation & Motion", 3], ["Textile Design", 6], ["Design Research", 5]],
+  front: [["Communication Design", 3], ["Fashion Design", 4], ["Product Design", 2], ["Industrial Design", 1], ["Interior & Spatial Design", 5]]
 };
 function seeded(str) { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
   return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-/* A forest tree is limbs -> sub-limbs -> leaves. UX and Industrial use their real data (one limb per branch in its own
+/* A forest tree is limbs -> sub-limbs -> leaves. Product Design and Industrial use their real data (one limb per branch in its own
    colour, one sub-limb per sub-branch, one leaf per company, limb thickness = companies); the others get a random shape. */
-function forestShape(name, hue) {
+function forestShape(name, hue, fixed) {
   const real = S.trees.find(t => t.meta.discipline === name && (t.meta.region || "India") === "India") || S.trees.find(t => t.meta.discipline === name);
   forestShape.real = !!real;
+  if (fixed) return fixed.map(subs => ({ c: `var(--b${hue})`, subs }));
   if (real) return real.branches.map((b, i) => ({ c: colorOf(b, i), subs: b.children.map(ch => Math.max(1, (ch.companies || []).length)) }));
   const R = seeded(name + "#shape"), n = 3 + Math.floor(R() * 7), dense = .35 + R() * .9;
   return Array.from({ length: n }, () => ({ c: `var(--b${hue})`, subs: Array.from({ length: 1 + Math.floor(R() * 4) }, () => 1 + Math.floor(R() * 7 * dense)) }));
 }
-function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls, slot) {
+function forestTree(parent, labels, name, hue, cx, gy, s, delay, cls, slot, fixed) {
   const R = seeded(name), g = el("g", { class: "ft " + cls, style: `--d:${delay}s` }, parent);
-  const shape = forestShape(name, hue), total = shape.reduce((m, l) => m + l.subs.reduce((x, y) => x + y, 0), 0);
+  const shape = forestShape(name, hue, fixed), total = shape.reduce((m, l) => m + l.subs.reduce((x, y) => x + y, 0), 0);
   // trunk height varies tree to tree: some short, some tall (real trees grow with their size)
   const hf = forestShape.real ? .85 + Math.min(.45, total / 180) : .55 + R() * .8;
   const h = 190 * s * hf, tw = Math.min(110, 40 + total * .55) * s, top = gy - h, reach = (.85 + Math.min(.35, total / 250)) * (.92 + R() * .16);
@@ -647,9 +646,9 @@ function renderForest() {
   box.innerHTML = ""; const f = el("svg", { preserveAspectRatio: "xMidYMid meet", role: "img", "aria-label": FOREST.title }, box);
   const ground = y => el("path", { d: `M-40,${y} Q${W / 2},${y - 22} ${W + 40},${y}`, stroke: "var(--ground)", "stroke-width": 4, fill: "none" }, f);
   const backG = el("g", {}, f); ground(1180); const frontG = el("g", {}, f), labels = el("g", {}, f);
-  el("path", { d: `M-40,480 Q${W / 2},462 ${W + 40},480`, stroke: "var(--ground)", "stroke-width": 3, fill: "none", opacity: .6 }, backG);
+  el("path", { d: `M-40,480 Q${W / 2},462 ${W + 40},480`, stroke: "var(--ground)", "stroke-width": 4, fill: "none" }, backG);
   const bk = FOREST.back.length, fr = FOREST.front.length;
-  FOREST.back.forEach(([n, h], i) => forestTree(backG, labels, n, h, W * (i + .5) / bk, 480, .7, .15 + i * .08, "back", W / bk * .96));
+  FOREST.back.forEach(([n, h, fx], i) => forestTree(backG, labels, n, h, W * (i + .5) / bk, 480, .7, .15 + i * .08, "back", W / bk * .96, fx));
   FOREST.front.forEach(([n, h], i) => forestTree(frontG, labels, n, h, W * (i + .5) / fr, 1180, 1, .6 + i * .1, "", W / fr * .96));
   const bb = f.getBBox(), pad = 20; f.setAttribute("viewBox", `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
 }

@@ -5,7 +5,7 @@ Name each file exactly as below. .svg is best, .png or .jpg also work. Square or
 Any company without a file shows a lettered badge instead.
 To use a different path, add  logo: "logos/whatever.png"  to that company in the data file.
 
-UX Design
+Product Design
   swiggy.svg   (Swiggy)
   zomato-blinkit.svg   (Zomato / Blinkit)
   zepto.svg   (Zepto)
