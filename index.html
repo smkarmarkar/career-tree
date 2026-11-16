@@ -147,6 +147,11 @@ body.has-region #focus{top:172px;height:calc(100% - 254px)}
 #focus .f-sub{transition:opacity .35s;cursor:pointer}
 #focus.subsel .f-sub{opacity:.18} #focus.subsel .f-sub.on{opacity:1}
 #focus .f-lbl{font-weight:600}
+/* the close-up grows like the main tree: limbs draw out from the branch, boxes appear, rails draw, then the logos pop in */
+#focus .fl{stroke-dasharray:1;stroke-dashoffset:1} #focus .fo{opacity:0}
+#focus.grow .fl{stroke-dashoffset:0;transition:stroke-dashoffset .45s cubic-bezier(.4,0,.2,1) var(--d,0s)}
+#focus.grow .fo{opacity:1;transition:opacity .22s var(--d,0s)}
+@media (prefers-reduced-motion:reduce){#focus.grow .fl,#focus.grow .fo{transition:none}}
 #focus .f-loc{font-weight:500;fill:var(--ink-2)}
 /* ============ DIALOG + KBD (shadcn Dialog, Kbd) ============ */
 #help{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.5);z-index:9}
@@ -548,17 +553,19 @@ function render() {
 function renderFocus(bid, sid) {
   const tree = S.tree, bi = tree.branches.findIndex(b => b.id === bid), b = tree.branches[bi];
   const fs = $("focus"); fs.innerHTML = "";
-  // logos are the focus here: each sub-branch is one row of big logos, name under each, so a branch is only
-  // 4 or 5 rows tall and everything can be drawn large. Names, boxes and gaps stay small.
-  const c = colorOf(b, bi), GAP = 26, LF = 21, SF = 24, BF = 30;
-  const rIdx = co => Math.min(2, bandIdx(tree, co.band));
-  const R = [31, 35, 39], RM = 39, SH = RM * 2 + 14 + LF * 1.3;
-  const subW = Math.max(...b.children.map(ch => measure(ch.label, SF))) + SF * 1.2;
-  const bw = measure(b.label, BF) + BF * 1.1;
-  const subLeft = bw + 110, tileW = co => Math.max(RM * 2 + 18, measure(co.name, LF) + 22);
-  // layout with at most N logos per line. Sub-branch boxes sit on an arc around the branch label
-  // (middle ones further out, outer ones closer in), so they are not one rigid column.
-  const plan = N => {
+  // a newly opened branch grows in; picking a sub-branch of the branch already open redraws without replaying it
+  const fresh = fs.dataset.bid !== bid; fs.dataset.bid = bid; if (fresh) fs.classList.remove("grow");
+  const T0 = .3, dl = t => `--d:${(T0 + t).toFixed(2)}s`;
+  // drawn in screen pixels (1 unit = 1px): text, box outlines and connectors keep one fixed size on every branch,
+  // and only the logos grow or shrink to fill the space. Each sub-branch is a row of logos with names underneath.
+  const c = colorOf(b, bi), SW = 2.5, LF = 13, SF = 15, BF = 18, GAP = 16;
+  const rIdx = co => Math.min(2, bandIdx(tree, co.band)), RK = [.82, .91, 1];
+  const subW = Math.max(...b.children.map(ch => measure(ch.label, SF))) + SF * 1.6;
+  const bw = measure(b.label, BF) + BF * 1.1, subLeft = bw + 64;
+  const fr = fs.getBoundingClientRect(), FW = fr.width || innerWidth * .55, FH = fr.height || innerHeight * .7;
+  // layout for logo radius RM with at most N logos per line; sub-branch boxes sit on an arc around the branch label
+  const plan = (N, RM) => {
+    const SH = RM * 2 + 8 + LF * 1.5, tileW = co => Math.max(RM * 2 + 12, measure(co.name, LF) + 14);
     let y = 0; const rows = b.children.map(ch => {
       const cos = ch.companies || [], lines = [];
       for (let k = 0; k < Math.max(1, cos.length); k += N) lines.push(cos.slice(k, k + N));
@@ -566,55 +573,52 @@ function renderFocus(bid, sid) {
       return { ch, lines, lys, cy: (lys[0] + lys[lys.length - 1]) / 2 };
     });
     const by = (rows[0].cy + rows[rows.length - 1].cy) / 2, dmax = Math.max(1, ...rows.map(r => Math.abs(r.cy - by)));
-    const arc = rows.length > 2 ? 110 : 0; let w = 0;
+    const arc = rows.length > 2 ? 56 : 0; let w = 0;
     rows.forEach(r => {
-      r.sx = subLeft + arc * (1 - Math.pow((r.cy - by) / dmax, 2));
-      r.leaves = []; r.ends = [];
-      r.lines.forEach((ln, k) => { let x = r.sx + subW + 60;
-        ln.forEach(co => { const tw = tileW(co); r.leaves.push({ co, x: x + tw / 2, y: r.lys[k], r: R[rIdx({ band: co.band || r.ch.band })] }); x += tw; });
+      r.sx = subLeft + arc * (1 - Math.pow((r.cy - by) / dmax, 2)); r.leaves = []; r.ends = [];
+      r.lines.forEach((ln, k) => { let x = r.sx + subW + 40;
+        ln.forEach(co => { const tw = tileW(co); r.leaves.push({ co, x: x + tw / 2, y: r.lys[k], r: RM * RK[rIdx({ band: co.band || r.ch.band })] }); x += tw; });
         r.ends.push(x - (ln.length ? tileW(ln[ln.length - 1]) / 2 : 0)); w = Math.max(w, x); });
     });
-    return { rows, by, w: w + 20, h: y - GAP + LF * 1.5 };
+    return { rows, by, RM, w: w + 24, h: y - GAP + RM * .2 };
   };
-  // pick how many logos per line by what draws the close-up biggest in the space it has
-  const fr = fs.getBoundingClientRect(), FW = fr.width || innerWidth * .55, FH = fr.height || innerHeight * .7;
+  // biggest logos that fit; for the same size, fewer wrapped lines
   const most = Math.max(1, ...b.children.map(ch => (ch.companies || []).length));
   let best = null;
-  for (let N = most; N >= Math.min(2, most); N--) { const L = plan(N), k = Math.min(FW / L.w, FH / L.h); if (!best || k > best.k * 1.03) best = { ...L, k }; }
-  const { rows, by } = best;
+  for (let RM = 46; RM >= 14 && !best; RM--) for (let N = most; N >= Math.min(2, most); N--) { const L = plan(N, RM); if (L.w <= FW && L.h <= FH) { best = L; break; } }
+  if (!best) best = plan(Math.min(2, most), 14);
+  const { rows, by, RM } = best;
   const limbs = el("g", {}, fs), nodes = el("g", {}, fs), SM = smooth();
-  const wsum = rows.reduce((m, r) => m + Math.max(F.minSub, r.leaves.length * F.unit * 1.6), 0);
-  // the limbs leave as one bundle from under the branch label: squeeze the bundle to fit inside the label's height,
-  // and start it well inside the label so no flat limb end shows past its edge
-  const bh = BF * 1.76, kq = Math.min(1, bh * .72 / wsum);
-  let off = -wsum / 2;
+  const stroke = { fill: "none", stroke: c, "stroke-width": SW, "stroke-linecap": "round", "stroke-linejoin": "round" };
   rows.forEach(r => {
     const g = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, nodes);
     const lg = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, limbs);
-    const ww = Math.max(F.minSub, r.leaves.length * F.unit * 1.6), o = off + ww / 2; off += ww;
-    const oy = by + o * kq, w0 = ww * kq, gx = r.sx - bw;
-    const P = SM ? [[bw - 40, oy], [bw + gx * .55, oy], [r.sx - gx * .7, r.cy], [r.sx + 4, r.cy]] : [[bw - 40, oy], [bw + gx, r.cy], [r.sx + 4, r.cy]];
-    el("path", { d: taper(P, w0, Math.max(4, Math.min(w0, ww * .6))), fill: c }, lg);
+    const gx = r.sx - bw;
+    el("path", { class: "fl", pathLength: 1, style: dl(0), d: pathD(SM ? [[bw, by], [bw + gx * .55, by], [r.sx - gx * .55, r.cy], [r.sx, r.cy]] : [[bw, by], [bw + gx * .5, r.cy], [r.sx, r.cy]]), ...stroke }, lg);
     // a level rail per line of logos; a wrapped line hangs off the box with a smooth bend
     const ax = r.sx + subW;
-    r.lys.forEach((ly, k) => { if (!r.lines[k].length) return; const bx = ax + 60;
-      const d = Math.abs(ly - r.cy) < 1 ? `M${ax},${ly}` : `M${ax},${r.cy}C${ax + 34},${r.cy} ${ax + 14},${ly} ${bx},${ly}`;
-      el("path", { d: `${d}L${r.ends[k]},${ly}`, fill: "none", stroke: c, "stroke-width": 3.5, "stroke-linecap": "round", "stroke-linejoin": "round" }, lg); });
-    r.leaves.forEach(lf => {
-      leafMark(g, lf.x, lf.y, lf.r, c, lf.co, -18, 1.5);
-      const t = el("text", { class: "f-lbl", x: lf.x, y: lf.y + RM + 12 + LF * .8, "text-anchor": "middle", "font-size": LF }, g);
+    r.lys.forEach((ly, k) => { if (!r.lines[k].length) return;
+      const d = Math.abs(ly - r.cy) < 1 ? `M${ax},${ly}` : `M${ax},${r.cy}C${ax + 24},${r.cy} ${ax + 10},${ly} ${ax + 40},${ly}`;
+      el("path", { class: "fl", pathLength: 1, style: dl(.55), d: `${d}L${r.ends[k]},${ly}`, ...stroke }, lg); });
+    r.leaves.forEach((lf, i) => {
+      const lg2 = el("g", { class: "fo", style: dl(.75 + i * .05) }, g);
+      leafMark(lg2, lf.x, lf.y, lf.r, c, lf.co, -18, 1.5);
+      const t = el("text", { class: "f-lbl", x: lf.x, y: lf.y + RM + 6 + LF * .85, "text-anchor": "middle", "font-size": LF }, lg2);
       t.textContent = lf.co.name;
     });
-    const box = boxed(g, r.sx + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
-    box.querySelector("rect").setAttribute("fill", "var(--panel)"); setSubStroke(box, Math.max(4, ww * .6), 3.5);
+    const box = boxed(g, r.sx + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .45, "sbox", null, c);
+    box.querySelector("rect").setAttribute("fill", "var(--panel)"); box.querySelector("rect").style.setProperty("--sw", SW + "px");
+    box.classList.add("fo"); box.setAttribute("style", dl(.4));
     g.onclick = e => { e.stopPropagation(); zoomTo(bid, r.ch.id); };
   });
-  boxed(nodes, bw / 2, by, b.label, BF, BF * .55, BF * .38, "bbox", c);
+  boxed(nodes, bw / 2, by, b.label, BF, BF * .55, BF * .45, "bbox fo", c).setAttribute("style", dl(-.1));
   fs.classList.toggle("subsel", !!sid);
-  const bb = fs.getBBox ? null : null;
-  const box = nodes.getBBox(), lb = limbs.getBBox();
-  const x0 = Math.min(box.x, lb.x) - 20, y0 = Math.min(box.y, lb.y) - 20, x1 = Math.max(box.x + box.width, lb.x + lb.width) + 20, y1 = Math.max(box.y + box.height, lb.y + lb.height) + 20;
-  fs.setAttribute("viewBox", `${x0} ${y0} ${x1 - x0} ${y1 - y0}`);
+  if (fresh) requestAnimationFrame(() => requestAnimationFrame(() => fs.classList.add("grow")));
+  // 1:1 with the screen: the drawing is centred in the space without being scaled (scaled down only if it cannot fit)
+  const bb = fs.getBBox(), pad = 12;
+  if (bb.width + pad * 2 <= FW && bb.height + pad * 2 <= FH)
+    fs.setAttribute("viewBox", `${bb.x - pad} ${bb.y + bb.height / 2 - FH / 2} ${FW} ${FH}`);
+  else fs.setAttribute("viewBox", `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
 }
 $("focus").addEventListener("click", () => zoomOut());
 
@@ -797,7 +801,7 @@ function zoomTo(bid, sid, fromStep) {
   renderFocus(bid, sid); document.body.classList.add("focus");
 }
 function zoomOut(fromStep) {
-  S.zoomed = null; $("panel").classList.remove("open"); document.body.classList.remove("focus");
+  S.zoomed = null; $("panel").classList.remove("open"); document.body.classList.remove("focus"); $("focus").dataset.bid = "";
   const st = S.steps[S.step];
   world.querySelectorAll(".g-branch").forEach(g => { g.classList.remove("subfocus", "zoomed");
     g.classList.toggle("dim", st.view === "reveal" && !g.classList.contains("off") && g.dataset.id !== st.branch); });
