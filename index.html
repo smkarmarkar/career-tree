@@ -615,7 +615,7 @@ function renderFocus(bid, sid) {
       el("path", { class: "fl", pathLength: 1, style: dl(.55), d: `${d}L${r.ends[k]},${ly}`, ...stroke }, lg); });
     r.leaves.forEach((lf, i) => {
       const lg2 = el("g", { class: "fo", style: dl(.75 + i * .05) }, g);
-      leafMark(lg2, lf.x, lf.y, lf.r, c, lf.co, -18, 1.5);
+      leafMark(lg2, lf.x, lf.y, lf.r, c, lf.co, -18, 1.36);
       const t = el("text", { class: "f-lbl", x: lf.x, y: lf.y + RM + 6 + LF * .85, "text-anchor": "middle", "font-size": LF }, lg2);
       t.textContent = lf.co.name;
     });
