@@ -476,8 +476,9 @@ function render() {
   const y0 = H * 0.3 - 1, SM = smooth();
   el("path", { fill: "var(--trunk)", d: `M${-T / 2},${y0} C${-T / 2},${H * .55} ${-T * .55},${H * .78} ${-base / 2},${H} L${base / 2},${H} C${T * .55},${H * .78} ${T / 2},${H * .55} ${T / 2},${y0} Z` }, limbsL);
   // faint outlines fade up from the trunk colour, so unrevealed branches still read as part of the tree
-  const gg = el("linearGradient", { id: "ghostGr", gradientUnits: "userSpaceOnUse", x1: 0, y1: 40, x2: 0, y2: -15 }, defs);
-  el("stop", { offset: "0", "stop-color": trunkC }, gg); el("stop", { offset: "1", "stop-color": trunkC, "stop-opacity": 0 }, gg);
+  // they start fading right at the top of the trunk and ease out, so the trunk top never shows a hard band or solid stubs
+  const gg = el("linearGradient", { id: "ghostGr", gradientUnits: "userSpaceOnUse", x1: 0, y1: y0 - 20, x2: 0, y2: y0 - 190 }, defs);
+  [[0, 1], [.3, .55], [.65, .18], [1, 0]].forEach(([o, a]) => el("stop", { offset: o, "stop-color": trunkC, "stop-opacity": a }, gg));
   const tl = el("text", { class: "trunk-lbl", "text-anchor": "middle", y: H + 104 }, world); tl.textContent = tree.meta.discipline;
 
   const limb = (g, id, P, w0, w1, fill, stage) => {
@@ -498,16 +499,8 @@ function render() {
     // starts inside the trunk and rises vertically, so branches grow out of the trunk with no seam
     const rise = Math.min(140, Math.abs(B.y) * 0.35), ctrl = [B.x - (B.x - sx) * 0.55, B.y + Math.abs(B.y) * 0.25];
     const P = [[sx, F.trunkH * 0.3], [sx, -rise], ctrl, [B.x, B.y]];
-    // outermost limbs: a curved fillet under the limb, so it flows out of the trunk edge instead of leaving a shoulder
-    const side = B.idx === 0 ? -1 : B.idx === L.branches.length - 1 ? 1 : 0;
-    if (side) {
-      const t = 0.34, q = bez(P, t), len = Math.hypot(q.tx, q.ty) || 1, w = B.w * (1 - 0.15 * t) / 2;
-      let nx = -q.ty / len, ny = q.tx / len; if (Math.sign(nx) !== side) { nx = -nx; ny = -ny; }
-      const E = [q.x + nx * w, q.y + ny * w], S0 = [side * T / 2 * 1.02, F.trunkH * 0.35];
-      el("path", { d: `M${S0}Q${side * T / 2},${E[1]} ${E}L${q.x},${q.y}L${sx},${F.trunkH * 0.3}Z`, fill: `url(#${gid})`, mask: `url(#m-${b.id})` }, g);
-    }
-    // ghost = a short stub only (first 22% of the limb), so unrevealed branches read as roots, not long faded lines
-    { const t = 0.22, lp = (a, b) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    // ghost = a short stub only (first third of the limb, fully faded before it ends), so unrevealed branches read as roots, not long faded lines
+    { const t = 0.32, lp = (a, b) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
       const a = lp(P[0], P[1]), b2 = lp(P[1], P[2]), c = lp(P[2], P[3]), d = lp(a, b2), e = lp(b2, c), f = lp(d, e);
       el("path", { d: taper([P[0], a, d, f], B.w, B.w * (1 - 0.15 * t)) }, ghostL); }
     limb(g, "m-" + b.id, P, B.w, B.w * 0.85, `url(#${gid})`, "main");
@@ -569,13 +562,17 @@ function renderFocus(bid, sid) {
   const total = y - GAP, by = total / 2;
   const limbs = el("g", {}, fs), nodes = el("g", {}, fs), SM = smooth();
   const wsum = rows.reduce((m, r) => m + Math.max(F.minSub, r.leaves.length * F.unit * 1.6), 0);
+  // the limbs leave as one bundle from under the branch label: squeeze the bundle to fit inside the label's height,
+  // and start it well inside the label so no flat limb end shows past its edge
+  const bh = BF * 1.76, kq = Math.min(1, bh * .72 / wsum);
   let off = -wsum / 2;
   rows.forEach(r => {
     const g = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, nodes);
     const lg = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, limbs);
     const ww = Math.max(F.minSub, r.leaves.length * F.unit * 1.6), o = off + ww / 2; off += ww;
-    const P = SM ? [[bw - 10, by + o], [bw + 65, by + o], [subLeft - 85, r.cy], [subLeft + 4, r.cy]] : [[bw - 10, by + o], [bw + 110, r.cy], [subLeft + 4, r.cy]];
-    el("path", { d: taper(P, ww, Math.max(4, ww * .6)), fill: c }, lg);
+    const oy = by + o * kq, w0 = ww * kq;
+    const P = SM ? [[bw - 40, oy], [bw + 65, oy], [subLeft - 85, r.cy], [subLeft + 4, r.cy]] : [[bw - 40, oy], [bw + 110, r.cy], [subLeft + 4, r.cy]];
+    el("path", { d: taper(P, w0, Math.max(4, Math.min(w0, ww * .6))), fill: c }, lg);
     const x0 = subLeft + subW;
     r.leaves.forEach(lf => {
       if (!lf.co.name) return;
