@@ -17,7 +17,7 @@
   --background:#FFFFFF; --foreground:#0C0A09; --primary:#1C1917; --primary-foreground:#FAFAF9;
   --muted:#F5F5F4; --muted-foreground:#57534E; --accent:#F5F5F4; --border:#E7E5E4; --ring:#A8A29E;
   --bg:#F5F5F4; --ink:#0C0A09; --ink-2:#57534E; --line:#E7E5E4; --panel:#FFFFFF;
-  --trunk:#1C1917; --ground:#D6D3D1; --ghost:#E7E5E4; --tablist:#E7E5E4;
+  --trunk:#1C1917; --ground:#D6D3D1; --ghost:#E7E5E4; --tablist:#E7E5E4; --skel:#D9D6D2;
   --shadow-xs:0 1px 2px rgba(0,0,0,.05); --shadow-sm:0 1px 3px rgba(0,0,0,.10),0 1px 2px -1px rgba(0,0,0,.10);
   --shadow-lg:0 10px 15px -3px rgba(0,0,0,.10),0 4px 6px -4px rgba(0,0,0,.10);
   --b1:#0B6B60; --b2:#3A3DB8; --b3:#AD3A09; --b4:#A3168F; --b5:#1A5FB4; --b6:#7F5D00; --b7:#1E6E33;
@@ -28,7 +28,7 @@
     --background:#0C0A09; --foreground:#FAFAF9; --primary:#E7E5E4; --primary-foreground:#1C1917;
     --muted:#292524; --muted-foreground:#A8A29E; --accent:#292524; --border:#292524; --ring:#78716C;
     --bg:#0C0A09; --ink:#FAFAF9; --ink-2:#A8A29E; --line:#292524; --panel:#1C1917;
-    --trunk:#E7E5E4; --ground:#44403C; --ghost:#292524; --tablist:#292524;
+    --trunk:#E7E5E4; --ground:#44403C; --ghost:#292524; --tablist:#292524; --skel:#3A3532;
     --b1:#2CC4B0; --b2:#8E92FF; --b3:#FF8A4C; --b4:#F06BDB; --b5:#5AA8FF; --b6:#F2C14E; --b7:#5DD47A;
   }
 }
@@ -36,7 +36,7 @@
   --background:#0C0A09; --foreground:#FAFAF9; --primary:#E7E5E4; --primary-foreground:#1C1917;
   --muted:#292524; --muted-foreground:#A8A29E; --accent:#292524; --border:#292524; --ring:#78716C;
   --bg:#0C0A09; --ink:#FAFAF9; --ink-2:#A8A29E; --line:#292524; --panel:#1C1917;
-  --trunk:#E7E5E4; --ground:#44403C; --ghost:#292524; --tablist:#292524;
+  --trunk:#E7E5E4; --ground:#44403C; --ghost:#292524; --tablist:#292524; --skel:#3A3532;
   --b1:#2CC4B0; --b2:#8E92FF; --b3:#FF8A4C; --b4:#F06BDB; --b5:#5AA8FF; --b6:#F2C14E; --b7:#5DD47A;
 }
 /* ============ BASE ============ */
@@ -474,6 +474,9 @@ function render() {
   const L = layout(tree);
   const trunkC = css("--trunk");
   // ground + trunk: trunk width = sum of all branch widths
+  // skeleton: the whole tree in grey (limbs, box outlines, empty circles; no logos, no text). It shows on the first
+  // slide, then each branch grows over it in colour. Unrevealed and dimmed branches keep showing it.
+  const skelL = el("g", { class: "skel" }, world), SK = "var(--skel)";
   const ghostL = el("g", { class: "ghost" }, world), limbsL = el("g", {}, world), leavesL = el("g", {}, world), nodesL = el("g", {}, world);
   const T = L.trunk, H = F.trunkH, base = T * 1.5;
   el("path", { d: `M${-base * 2.4},${H} Q0,${H - 12} ${base * 2.4},${H}`, stroke: "var(--ground)", "stroke-width": 4, fill: "none", "stroke-linecap": "round" }, limbsL);
@@ -508,14 +511,23 @@ function render() {
     { const t = 0.32, lp = (a, b) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
       const a = lp(P[0], P[1]), b2 = lp(P[1], P[2]), c = lp(P[2], P[3]), d = lp(a, b2), e = lp(b2, c), f = lp(d, e);
       el("path", { d: taper([P[0], a, d, f], B.w, B.w * (1 - 0.15 * t)) }, ghostL); }
+    el("path", { d: taper(P, B.w, B.w * 0.85), fill: SK }, skelL);
     limb(g, "m-" + b.id, P, B.w, B.w * 0.85, `url(#${gid})`, "main");
     // sub-limbs leave the branch end side by side, ordered like the sub-branches
     let tx = B.x - ctrl[0], ty = B.y - ctrl[1]; const tl2 = Math.hypot(tx, ty) || 1; tx /= tl2; ty /= tl2;
     let off = -B.w * 0.85 / 2;
     [...B.subs].sort((p, q) => p.a - q.a).forEach(sb => {
       const ww = sb.w * 0.85, o = off + ww / 2; off += ww;
-      const s0 = [B.x - ty * o, B.y + tx * o];
-      limb(g, "m-" + b.id + "-" + sb.data.id, SM ? subLimb(s0, tx, ty, sb) : [s0, [s0[0] + tx * 90, s0[1] + ty * 90], [sb.x, sb.y]], ww, Math.max(3, ww * 0.55), c, "sub");
+      const s0 = [B.x - ty * o, B.y + tx * o], SP = SM ? subLimb(s0, tx, ty, sb) : [s0, [s0[0] + tx * 90, s0[1] + ty * 90], [sb.x, sb.y]];
+      limb(g, "m-" + b.id + "-" + sb.data.id, SP, ww, Math.max(3, ww * 0.55), c, "sub");
+      el("path", { d: taper(SP, ww, Math.max(3, ww * 0.55)), fill: SK }, skelL);
+      const tw = F.unit * 1.3;
+      sb.leaves.forEach(lf => {
+        el("path", { d: SM ? twig(sb, lf.x, lf.y) : `M${sb.x + lf.cx * lf.tEdge},${sb.y + lf.cy * lf.tEdge}L${lf.x},${lf.y}`, fill: "none", stroke: SK, "stroke-width": tw, "stroke-linecap": "round" }, skelL);
+        const sw = Math.max(2.5, lf.r * .1);
+        el("circle", { cx: lf.x, cy: lf.y, r: lf.r, fill: "var(--bg)", stroke: SK, "stroke-width": sw }, skelL);
+      });
+      el("rect", { x: sb.x - sb.hw, y: sb.y - sb.hh, width: sb.hw * 2, height: sb.hh * 2, rx: 10, fill: "var(--bg)", stroke: SK, "stroke-width": subStroke(Math.max(3, ww * 0.55), tw) }, skelL);
     });
     const nodes = el("g", { class: "nodes" }, gn), lnodes = el("g", { class: "nodes n-leaf" }, gl);
     B.subs.forEach(sb => {
@@ -535,6 +547,7 @@ function render() {
       });
     });
     const bb = boxed(nodes, B.x, B.y, b.label, F.branchFont, F.branchFont * .55, F.branchFont * .375, "bbox n-branch", c);
+    el("rect", { x: B.x - bb._hw, y: B.y - bb._hh, width: bb._hw * 2, height: bb._hh * 2, rx: 12, fill: SK }, skelL);
     bb.addEventListener("click", e => { e.stopPropagation(); zoomTo(b.id); });
   });
 
