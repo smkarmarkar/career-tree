@@ -388,10 +388,10 @@ function leafPath(r) {
   const Lh = r * 1.35, W = r * 1.05;
   return `M${-Lh},0 C${-Lh * .35},${-W * 1.15} ${Lh * .45},${-W * .95} ${Lh},0 C${Lh * .45},${W * .95} ${-Lh * .35},${W * 1.15} ${-Lh},0 Z`;
 }
-function leafMark(parent, x, y, r, color, co, deg = 0, logoK = 1.25) {
+function leafMark(parent, x, y, r, color, co, deg = 0, logoK = 1.25, ringW = 0) {
   const g = el("g", { class: "mark" }, parent);
   // simple circle: brand colour with the letter, or a white disc with the logo; a coloured ring either way
-  const sw = Math.max(2.5, r * .1);
+  const sw = ringW || Math.max(2.5, r * .1);
   el("circle", { class: "ring", cx: x, cy: y, r: r + sw * .5, fill: "var(--bg)", stroke: color, "stroke-width": sw }, g);
   el("circle", { cx: x, cy: y, r: r - sw * .5, fill: color }, g);
   const t = el("text", { class: "mono", x, y: y + r * .04, "text-anchor": "middle", "dominant-baseline": "central", "font-size": r * 1.05 }, g);
@@ -598,8 +598,11 @@ function renderFocus(bid, sid) {
   // biggest logos that fit; for the same size, fewer wrapped lines
   const most = Math.max(1, ...b.children.map(ch => (ch.companies || []).length));
   let best = null;
-  for (let RM = 46; RM >= 14 && !best; RM--) for (let N = most; N >= Math.min(2, most); N--) { const L = plan(N, RM); if (L.w <= FW && L.h <= FH) { best = L; break; } }
-  if (!best) best = plan(Math.min(2, most), 14);
+  for (let RM = 46; RM >= 14 && !best; RM--) for (let N = most; N >= 1; N--) { const L = plan(N, RM); if (L.w <= FW && L.h <= FH) { best = { ...L, N }; break; } }
+  if (!best) for (let N = most; N >= 1; N--) { const L = plan(N, 14), k = Math.min(FW / L.w, FH / L.h); if (!best || k > best.k) best = { ...L, N, k }; }
+  // then draw the circles 40% smaller than the size that would fill the space, with the logo at about half that
+  // circle's width, so each logo has white space around it
+  best = plan(best.N, best.RM * .6);
   const { rows, by, RM } = best;
   const limbs = el("g", {}, fs), nodes = el("g", {}, fs), SM = smooth();
   const stroke = { fill: "none", stroke: c, "stroke-width": SW, "stroke-linecap": "round", "stroke-linejoin": "round" };
@@ -615,7 +618,7 @@ function renderFocus(bid, sid) {
       el("path", { class: "fl", pathLength: 1, style: dl(.55), d: `${d}L${r.ends[k]},${ly}`, ...stroke }, lg); });
     r.leaves.forEach((lf, i) => {
       const lg2 = el("g", { class: "fo", style: dl(.75 + i * .05) }, g);
-      leafMark(lg2, lf.x, lf.y, lf.r, c, lf.co, -18, 1.36);
+      leafMark(lg2, lf.x, lf.y, lf.r, c, lf.co, -18, 1.13, 1);
       const t = el("text", { class: "f-lbl", x: lf.x, y: lf.y + RM + 6 + LF * .85, "text-anchor": "middle", "font-size": LF }, lg2);
       t.textContent = lf.co.name;
     });
