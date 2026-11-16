@@ -74,28 +74,28 @@ header p{margin:6px 0 0;color:var(--ink-2);font-size:clamp(14px,1.1vw,18px)}
 #panel{position:fixed;top:0;right:0;height:100%;width:var(--pw,min(42vw,760px));background:var(--panel);border-left:1px solid var(--line);box-shadow:var(--shadow-lg);
   transform:translateX(102%);transition:transform .5s cubic-bezier(.2,.7,.2,1);z-index:3;overflow-y:auto;padding:72px 32px 96px}
 #panel.open{transform:none}
-#panel .eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-#panel h2{font-weight:700;letter-spacing:-.025em;font-size:clamp(26px,2.2vw,36px);margin:6px 0 8px;line-height:1.15}
-#panel .sum{font-size:clamp(15px,1.2vw,19px);color:var(--ink-2);margin:0 0 24px;line-height:1.5}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--radius) + 4px);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow-sm);transition:box-shadow .25s}
+#panel .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+#panel h2{font-weight:700;letter-spacing:-.025em;font-size:clamp(22px,1.8vw,30px);margin:6px 0 8px;line-height:1.15}
+#panel .sum{font-size:clamp(14px,1vw,16px);color:var(--ink-2);margin:0 0 20px;line-height:1.5}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:calc(var(--radius) + 4px);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow-sm);transition:box-shadow .25s}
 .card.focus{box-shadow:0 0 0 2px var(--c),var(--shadow-sm)}
-.card h3{margin:0 0 14px;font-size:clamp(17px,1.35vw,22px);font-weight:600;letter-spacing:-.015em;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.card h3{margin:0 0 10px;font-size:clamp(15px,1.1vw,18px);font-weight:600;letter-spacing:-.015em;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
 .card h3>span:first-child::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:10px;vertical-align:.08em}
-.card dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0 0 14px;font-size:clamp(14px,1.05vw,16px)}
+.card dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0 0 10px;font-size:clamp(12px,.9vw,14px)}
 .card dt{color:var(--ink-2)} .card dd{margin:0;font-weight:500}
 .co-list{list-style:none;margin:6px 0 0;padding:0;display:grid}
-.co-list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 0;border-top:1px solid var(--line)}
+.co-list li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:8px 0;border-top:1px solid var(--line)}
 .co-list li:first-child{border-top:0}
-.co-logo{flex:none;width:36px;height:36px;display:grid;place-items:center}
-.co-logo img{width:36px;height:36px;object-fit:contain;padding:4px;background:#fff;border-radius:8px;display:none} .co-logo img.ok{display:block}
-.co-logo .lt{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--c,var(--ink));color:#fff} .co-logo:has(img.ok) .lt{display:none}
-.co-name{flex:1 1 140px;min-width:0;font-size:16px;font-weight:600;line-height:1.25}
+.co-logo{flex:none;width:72px;height:72px;display:grid;place-items:center}
+.co-logo img{width:72px;height:72px;object-fit:contain;padding:4px;background:#fff;border-radius:8px;display:none} .co-logo img.ok{display:block}
+.co-logo .lt{width:72px;height:72px;border-radius:12px;display:grid;place-items:center;font-size:28px;font-weight:700;background:var(--c,var(--ink));color:#fff} .co-logo:has(img.ok) .lt{display:none}
+.co-name{flex:1 1 140px;min-width:0;font-size:14px;font-weight:600;line-height:1.25}
 .co-name a.co-site{color:inherit;text-decoration:underline;text-decoration-color:var(--c);text-decoration-thickness:2px;text-underline-offset:4px}
 .co-name a.co-site:hover{color:var(--c)}
 .co-name i{font-style:normal;color:var(--c);margin-left:6px;font-weight:700}
-.co-name small{display:block;font-size:13px;font-weight:400;color:var(--ink-2);margin-top:2px}
+.co-name small{display:block;font-size:12px;font-weight:400;color:var(--ink-2);margin-top:2px}
 .co-name small b{color:var(--ink);font-weight:600}
-.co-list .co-links{flex:none;margin-left:auto;display:flex;gap:16px;font-size:13px;white-space:nowrap}
+.co-list .co-links{flex:none;margin-left:auto;display:flex;gap:14px;font-size:12px;white-space:nowrap}
 .co-list .co-links a{color:var(--ink);font-weight:500;text-decoration:underline;text-decoration-color:var(--c);text-underline-offset:4px}
 #panel .close{position:absolute;right:16px;top:16px;width:32px;height:32px;display:grid;place-items:center;border:none;border-radius:calc(var(--radius) - 4px);background:none;font-size:22px;line-height:1;color:var(--ink);opacity:.7;cursor:pointer}
 #panel .close:hover{opacity:1;background:var(--accent)}
@@ -383,7 +383,7 @@ function leafPath(r) {
   const Lh = r * 1.35, W = r * 1.05;
   return `M${-Lh},0 C${-Lh * .35},${-W * 1.15} ${Lh * .45},${-W * .95} ${Lh},0 C${Lh * .45},${W * .95} ${-Lh * .35},${W * 1.15} ${-Lh},0 Z`;
 }
-function leafMark(parent, x, y, r, color, co, deg = 0) {
+function leafMark(parent, x, y, r, color, co, deg = 0, logoK = 1.25) {
   const g = el("g", { class: "mark" }, parent);
   // simple circle: brand colour with the letter, or a white disc with the logo; a coloured ring either way
   const sw = Math.max(2.5, r * .1);
@@ -393,7 +393,7 @@ function leafMark(parent, x, y, r, color, co, deg = 0) {
   t.style.fill = textOn(color);
   t.textContent = (co.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase();
   el("circle", { class: "logo-disc", cx: x, cy: y, r: r - sw * .5, fill: "#fff" }, g);
-  const sz = r * 1.25, im = el("image", { class: "logo-img", x: x - sz / 2, y: y - sz / 2, width: sz, height: sz, preserveAspectRatio: "xMidYMid meet" }, g);
+  const sz = r * logoK, im = el("image", { class: "logo-img", x: x - sz / 2, y: y - sz / 2, width: sz, height: sz, preserveAspectRatio: "xMidYMid meet" }, g);
   const key = co.logo || slug(co.name), known = LOGO[key];
   if (known === null) { im.remove(); return g; }
   const srcs = known ? [known] : logoSrcs(co); let k = 0;
@@ -548,18 +548,40 @@ function render() {
 function renderFocus(bid, sid) {
   const tree = S.tree, bi = tree.branches.findIndex(b => b.id === bid), b = tree.branches[bi];
   const fs = $("focus"); fs.innerHTML = "";
-  const c = colorOf(b, bi), ROW = 72, GAP = 34, LF = 30, SF = 30, BF = 38;
+  // logos are the focus here: each sub-branch is one row of big logos, name under each, so a branch is only
+  // 4 or 5 rows tall and everything can be drawn large. Names, boxes and gaps stay small.
+  const c = colorOf(b, bi), GAP = 26, LF = 21, SF = 24, BF = 30;
   const rIdx = co => Math.min(2, bandIdx(tree, co.band));
-  const R = [17, 24, 31];
+  const R = [31, 35, 39], RM = 39, SH = RM * 2 + 14 + LF * 1.3;
   const subW = Math.max(...b.children.map(ch => measure(ch.label, SF))) + SF * 1.2;
   const bw = measure(b.label, BF) + BF * 1.1;
-  const subLeft = bw + 150, dotX = subLeft + subW + 150;
-  let y = 0; const rows = b.children.map(ch => {
-    const cos = ch.companies && ch.companies.length ? ch.companies : [{ name: "" }];
-    const top = y, h = cos.length * ROW; y += h + GAP;
-    return { ch, cy: top + h / 2, leaves: cos.map((co, i) => ({ co, y: top + ROW * (i + .5), r: R[rIdx({ band: co.band || ch.band })] })) };
-  });
-  const total = y - GAP, by = total / 2;
+  const subLeft = bw + 110, tileW = co => Math.max(RM * 2 + 18, measure(co.name, LF) + 22);
+  // layout with at most N logos per line. Sub-branch boxes sit on an arc around the branch label
+  // (middle ones further out, outer ones closer in), so they are not one rigid column.
+  const plan = N => {
+    let y = 0; const rows = b.children.map(ch => {
+      const cos = ch.companies || [], lines = [];
+      for (let k = 0; k < Math.max(1, cos.length); k += N) lines.push(cos.slice(k, k + N));
+      const lys = lines.map((_, k) => y + RM + k * SH); y += lines.length * SH + GAP;
+      return { ch, lines, lys, cy: (lys[0] + lys[lys.length - 1]) / 2 };
+    });
+    const by = (rows[0].cy + rows[rows.length - 1].cy) / 2, dmax = Math.max(1, ...rows.map(r => Math.abs(r.cy - by)));
+    const arc = rows.length > 2 ? 110 : 0; let w = 0;
+    rows.forEach(r => {
+      r.sx = subLeft + arc * (1 - Math.pow((r.cy - by) / dmax, 2));
+      r.leaves = []; r.ends = [];
+      r.lines.forEach((ln, k) => { let x = r.sx + subW + 60;
+        ln.forEach(co => { const tw = tileW(co); r.leaves.push({ co, x: x + tw / 2, y: r.lys[k], r: R[rIdx({ band: co.band || r.ch.band })] }); x += tw; });
+        r.ends.push(x - (ln.length ? tileW(ln[ln.length - 1]) / 2 : 0)); w = Math.max(w, x); });
+    });
+    return { rows, by, w: w + 20, h: y - GAP + LF * 1.5 };
+  };
+  // pick how many logos per line by what draws the close-up biggest in the space it has
+  const fr = fs.getBoundingClientRect(), FW = fr.width || innerWidth * .55, FH = fr.height || innerHeight * .7;
+  const most = Math.max(1, ...b.children.map(ch => (ch.companies || []).length));
+  let best = null;
+  for (let N = most; N >= Math.min(2, most); N--) { const L = plan(N), k = Math.min(FW / L.w, FH / L.h); if (!best || k > best.k * 1.03) best = { ...L, k }; }
+  const { rows, by } = best;
   const limbs = el("g", {}, fs), nodes = el("g", {}, fs), SM = smooth();
   const wsum = rows.reduce((m, r) => m + Math.max(F.minSub, r.leaves.length * F.unit * 1.6), 0);
   // the limbs leave as one bundle from under the branch label: squeeze the bundle to fit inside the label's height,
@@ -570,19 +592,20 @@ function renderFocus(bid, sid) {
     const g = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, nodes);
     const lg = el("g", { class: "f-sub" + (r.ch.id === sid ? " on" : ""), "data-id": r.ch.id }, limbs);
     const ww = Math.max(F.minSub, r.leaves.length * F.unit * 1.6), o = off + ww / 2; off += ww;
-    const oy = by + o * kq, w0 = ww * kq;
-    const P = SM ? [[bw - 40, oy], [bw + 65, oy], [subLeft - 85, r.cy], [subLeft + 4, r.cy]] : [[bw - 40, oy], [bw + 110, r.cy], [subLeft + 4, r.cy]];
+    const oy = by + o * kq, w0 = ww * kq, gx = r.sx - bw;
+    const P = SM ? [[bw - 40, oy], [bw + gx * .55, oy], [r.sx - gx * .7, r.cy], [r.sx + 4, r.cy]] : [[bw - 40, oy], [bw + gx, r.cy], [r.sx + 4, r.cy]];
     el("path", { d: taper(P, w0, Math.max(4, Math.min(w0, ww * .6))), fill: c }, lg);
-    const x0 = subLeft + subW;
+    // a level rail per line of logos; a wrapped line hangs off the box with a smooth bend
+    const ax = r.sx + subW;
+    r.lys.forEach((ly, k) => { if (!r.lines[k].length) return; const bx = ax + 60;
+      const d = Math.abs(ly - r.cy) < 1 ? `M${ax},${ly}` : `M${ax},${r.cy}C${ax + 34},${r.cy} ${ax + 14},${ly} ${bx},${ly}`;
+      el("path", { d: `${d}L${r.ends[k]},${ly}`, fill: "none", stroke: c, "stroke-width": 3.5, "stroke-linecap": "round", "stroke-linejoin": "round" }, lg); });
     r.leaves.forEach(lf => {
-      if (!lf.co.name) return;
-      el("path", { d: SM ? `M${x0},${r.cy} C${x0 + 42},${r.cy} ${x0 + 22},${lf.y} ${x0 + 64},${lf.y} L${dotX},${lf.y}` : `M${x0},${r.cy} C${x0 + 80},${r.cy} ${dotX - 80},${lf.y} ${dotX},${lf.y}`, fill: "none", stroke: c, "stroke-width": 3.5, "stroke-linecap": "round" }, lg);
-      leafMark(g, dotX, lf.y, lf.r, c, lf.co, -18);
-      const t = el("text", { class: "f-lbl", x: dotX + 58, y: lf.y, "dominant-baseline": "central", "font-size": LF }, g);
+      leafMark(g, lf.x, lf.y, lf.r, c, lf.co, -18, 1.5);
+      const t = el("text", { class: "f-lbl", x: lf.x, y: lf.y + RM + 12 + LF * .8, "text-anchor": "middle", "font-size": LF }, g);
       t.textContent = lf.co.name;
-      if (lf.co.loc) { const lt = el("tspan", { class: "f-loc", dx: 14, "font-size": LF * .72 }, t); lt.textContent = lf.co.loc; }
     });
-    const box = boxed(g, subLeft + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
+    const box = boxed(g, r.sx + subW / 2, r.cy, r.ch.label, SF, (subW - measure(r.ch.label, SF)) / 2, SF * .38, "sbox", null, c);
     box.querySelector("rect").setAttribute("fill", "var(--panel)"); setSubStroke(box, Math.max(4, ww * .6), 3.5);
     g.onclick = e => { e.stopPropagation(); zoomTo(bid, r.ch.id); };
   });
