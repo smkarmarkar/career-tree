@@ -140,7 +140,14 @@ svg text{font-family:var(--font);fill:var(--ink)}
 .sbox{cursor:pointer}
 .sbox rect{fill:var(--panel);rx:10px;stroke-width:var(--sw,2.5px);filter:drop-shadow(0 1px 2px rgba(0,0,0,.06))}
 .sbox text{font-weight:600}
-.sbox:hover rect{stroke-width:calc(var(--sw,2.5px) + 1.5px)} .bbox:hover rect{filter:brightness(1.08)}
+/* branch and sub-branch labels are buttons: a soft resting shadow, and on hover they lift with a deeper shadow */
+.bbox rect{filter:drop-shadow(0 3px 4px rgba(0,0,0,.2))}
+.bbox>*,.sbox>*{transition:transform .18s cubic-bezier(.4,0,.2,1),filter .18s,stroke-width .18s}
+.bbox:hover>*,.sbox:hover>*{transform:translateY(-6px)}
+.bbox:hover rect{filter:brightness(1.08) drop-shadow(0 14px 14px rgba(0,0,0,.38))}
+.sbox:hover rect{stroke-width:calc(var(--sw,2.5px) + 1.5px);filter:drop-shadow(0 12px 12px rgba(0,0,0,.28))}
+.bbox:active>*,.sbox:active>*{transform:translateY(-2px)}
+[data-theme=dark] .bbox:hover rect{filter:brightness(1.15) drop-shadow(0 14px 16px rgba(0,0,0,.75))}
 .leaf-lbl{paint-order:stroke;stroke:var(--bg);stroke-width:8px;stroke-linejoin:round;font-weight:500;fill:var(--ink-2);opacity:0;transition:opacity .4s}
 .g-sub{transition:opacity .4s} .subfocus .g-sub{opacity:.18} .subfocus .g-sub.on{opacity:1} .subfocus .g-sub:not(.on) .leaf-lbl{opacity:0}
 .trunk-lbl{font-size:92px;font-weight:700;letter-spacing:-.03em;fill:var(--ink)}
