@@ -837,7 +837,7 @@ function companyRow(co, ch, tree) {
   if (indiaPlace) links.push(`<a href="${liPeople(`${role} ${co.name} India`)}" target="_blank" rel="noopener">Search designers on LinkedIn ↗</a>`);
   if (abroadPlace) links.push(`<a href="${liPeople(`${role} ${co.name} ${country(abroadPlace)}`)}" target="_blank" rel="noopener">Designers in ${esc(country(abroadPlace))} ↗</a>`);
   const name = co.url ? `<a class="co-site" href="${esc(co.url)}" target="_blank" rel="noopener" title="Open ${esc(co.name)} website">${esc(co.name)}</a>` : esc(co.name);
-  const where = [co.loc, inIndia && co.abroad ? `also ${co.abroad}` : "", !inIndia && co.india ? `also ${co.india}, India` : ""].filter(Boolean).join(" · ");
+  const where = [co.what, co.loc, inIndia && co.abroad ? `also ${co.abroad}` : "", !inIndia && co.india ? `also ${co.india}, India` : ""].filter(Boolean).join(" · ");
   const letter = esc((co.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase());
   return `<li><span class="co-logo"><b class="lt">${letter}</b><img alt="" data-n="${esc(co.name)}" data-l="${esc(co.logo || "")}"></span>`
     + `<span class="co-name">${name}${where ? `<small>${esc(where)}</small>` : ""}${co.head ? `<small>${esc(co.head.role)}: <b>${esc(co.head.name)}</b></small>` : ""}</span>`

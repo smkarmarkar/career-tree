@@ -6,6 +6,7 @@
    The "src" field on each company records that evidence. It is not shown on screen.
    loc = design studio city in India (shown in the close-up). abroad = design studio outside India, if any.
    head = { name, role, src } only where press names the current design leader.
+   what = what the company makes, shown under its name in the panel.
    Salary bands are NOT researched yet, so sub-branches carry no band. */
 (window.CAREER_TREES = window.CAREER_TREES || []).push({
   meta: {
@@ -29,7 +30,7 @@
           evidence: "In-house design studios in India",
           companies: [
             { name: "Tata Motors", url: "https://cars.tatamotors.com", loc: "Pune", src: "Pune design studio (Autocar India, Mobility Outlook). Listed company renamed Tata Motors Passenger Vehicles Ltd in Oct 2025; cars.tatamotors.com is its official site (NSE filing)" },
-            { name: "Mahindra", url: "https://www.mahindra.com", loc: "Mumbai", head: { name: "Pratap Bose", role: "Chief Design Officer", src: "Autocar Professional; Mahindra press" }, src: "Mahindra India Design Studio, Mumbai, opened Apr 2025 (Mahindra press release)" },
+            { name: "Mahindra & Mahindra", logo: "logos/mahindra.svg", what: "SUVs, EVs and tractors", url: "https://www.mahindra.com", loc: "Mumbai", head: { name: "Pratap Bose", role: "Chief Design Officer", src: "Autocar Professional; Mahindra press" }, src: "Mahindra India Design Studio, Mumbai, opened Apr 2025 (Mahindra press release)" },
             { name: "Maruti Suzuki", url: "https://www.marutisuzuki.com", loc: "Rohtak", src: "In-house design (ThePrint); NID placements Phase 1 and 2" },
             { name: "Renault", url: "https://www.renaultgroup.com", loc: "Chennai", src: "Renault Design Centre Chennai, opened 2025 (Renault Group)" } ] },
         { id: "twowheel", label: "Two-wheeler makers",
@@ -37,14 +38,14 @@
           evidence: "In-house studios; NID placements and sponsored projects",
           companies: [
             { name: "Hero MotoCorp", url: "https://www.heromotocorp.com", loc: "Jaipur", src: "Centre of Innovation and Technology, Jaipur; Industrial Designer roles; NID placements Phase 1 and 2; NID TAD and Product Design project sponsor" },
-            { name: "TVS Motor", url: "https://www.tvsmotor.com", loc: "Hosur", abroad: "Italy", head: { name: "Timothy Prentice", role: "VP Design", src: "TVS Motor press release" }, src: "Design team led by VP Design, Hosur; NID TAD, Lifestyle Accessory and Furniture project sponsor" },
+            { name: "TVS Motor", what: "Motorcycles, scooters and EVs", url: "https://www.tvsmotor.com", loc: "Hosur", abroad: "Italy", head: { name: "Timothy Prentice", role: "VP Design", src: "TVS Motor press release" }, src: "Design team led by VP Design, Hosur; NID TAD, Lifestyle Accessory and Furniture project sponsor" },
             { name: "Bajaj Auto", url: "https://www.bajajauto.com", loc: "Pune", src: "Bajaj Auto Technology in-house design studio, Pune (India's Best Design Awards); NID placements Phase 1" } ] },
         { id: "ev", label: "EV makers",
           size: "Mid to large", work: "Vehicle form, CMF, packaging, accessories", portfolio: "Form plus engineering awareness",
           evidence: "In-house design teams in India",
           companies: [
             { name: "Ather Energy", url: "https://www.atherenergy.com", loc: "Bengaluru", src: "In-house design studio (India's Best Design Awards); NID placements Phase 1" },
-            { name: "Ola Electric", url: "https://www.olaelectric.com", loc: "Bengaluru", src: "Industrial Designer roles in Bengaluru; NID placements Phase 1 (listed as Ola)" },
+            { name: "Ola Electric", what: "Electric scooters and motorcycles", url: "https://www.olaelectric.com", loc: "Bengaluru", src: "Industrial Designer roles in Bengaluru; NID placements Phase 1 (listed as Ola)" },
             { name: "Matter", url: "https://www.matter.in", loc: "Pune", src: "Design centre in Pune (Autocar Professional); NID TAD and Lifestyle Accessory project sponsor" },
             { name: "Ultraviolette", url: "https://www.ultraviolette.com", loc: "Bengaluru", src: "Design and product development team, Bengaluru" } ] }
       ] },
@@ -79,7 +80,7 @@
           size: "Very large to small", work: "Watches, eyewear, jewellery, home objects", portfolio: "Detailing, materials, trend sense",
           evidence: "NID placements and sponsored projects",
           companies: [
-            { name: "Titan", url: "https://www.titancompany.in", loc: "Bengaluru", src: "In-house design team (Quartz); NID placements Phase 1 and 2; two NID Lifestyle Accessory project sponsorships" },
+            { name: "Titan", what: "Watches, eyecare (Titan EyePlus) and jewellery", url: "https://www.titancompany.in", loc: "Bengaluru", src: "Central in-house design team of about 75 designing jewellery, watches and eyewear (Quartz); in-house eyewear design unit with local frame manufacturing (IBEF); NID placements Phase 1 and 2; two NID Lifestyle Accessory project sponsorships" },
             { name: "Nicobar", url: "https://www.nicobar.com", src: "NID Ceramic & Glass and Lifestyle Accessory project sponsor" } ] },
         { id: "furniture", label: "Furniture",
           size: "Small to mid", work: "Furniture and home products", portfolio: "Making, material knowledge, joinery",
@@ -96,20 +97,24 @@
     { id: "studios", label: "Product design studios",
       summary: "Consultancies that design products for many clients.",
       notes: "The best place to build range fast. India's independent industrial design studios now win global awards and design for overseas founders.",
-      detailNotes: "Analogy was named India's Best Design Studio in 2023. Tata Elxsi is the large-scale option, closer to engineering services.",
+      detailNotes: "Many of India's best-known studios were started by NID alumni: Elephant in 1989, Desmania in 1993, Foley Designs and Studio ABD by former Titan designers. Analogy was named India's Best Design Studio in 2023. Tata Elxsi is the large-scale option, closer to engineering services.",
       children: [
-        { id: "pds", label: "Indian ID studios",
+        { id: "pds", label: "NID alumni studios",
           size: "Small to mid", work: "Concept to production for many clients", portfolio: "Range, model making, storytelling",
-          evidence: "Studio websites, awards, NID records",
+          evidence: "Founded by NID alumni (studio sites, press, NID records)",
           companies: [
-            { name: "Studio ABD", url: "https://studioabd.in", loc: "Bengaluru", src: "Multidisciplinary design studio, Bengaluru (YourStory)" },
-            { name: "Elephant Design", url: "https://www.elephantdesign.com", loc: "Pune", src: "Product design practice, Pune (company site)" },
-            { name: "Desmania Design", url: "https://www.desmania.com", loc: "Gurugram", src: "Industrial and auto design studio, Gurugram; NID placements Phase 1" },
-            { name: "Tata Elxsi", url: "https://www.tataelxsi.com", loc: "Bengaluru", src: "Industrial and product design services; NID TAD project sponsor" } ] },
-        { id: "indep", label: "Independent studios",
+            { name: "Foley Designs", what: "Michael Foley's studio: products, packaging, spaces, identity", url: "https://www.foleydesigns.com", loc: "Bengaluru", head: { name: "Michael Foley", role: "Founder", src: "Asian Paints Beautiful Homes; FactorDaily" }, src: "Founded 2006 by Michael Foley (NID 1994, ex-Titan product designer); designed the 2010 Commonwealth Games baton and Titan EyePlus identity and stores; CII Design Excellence Award 2011" },
+            { name: "Studio ABD", what: "Products, branding and packaging", url: "https://studioabd.in", loc: "Bengaluru", head: { name: "Abhijit Bansod", role: "Founder", src: "YourStory" }, src: "Founded 2008 by Abhijit Bansod (NID postgraduate, about 10 years in Titan's design team); Red Dot 2010 (YourStory, DesignWanted)" },
+            { name: "Elephant Design", what: "Strategy, product and brand design", url: "https://www.elephantdesign.com", loc: "Pune", src: "Founded 1989 by NID Ahmedabad graduates Ashwini Deshpande, Ashish Deshpande and Partho Guha (Entrepreneur India, Wikipedia)" },
+            { name: "Desmania Design", what: "Industrial and automotive design", url: "https://www.desmania.com", loc: "Gurugram", head: { name: "Anuj Prasad", role: "Founder and CEO", src: "UPES advisory board; Dexigner" }, src: "Co-founded 1993 by Anuj Prasad (M.Des Product Design, NID 1993); studio in Manesar, Gurugram; NID placements Phase 1" },
+            { name: "Paul Studio", what: "Consumer products and toys", url: "https://paulstudio.in", loc: "Pune", src: "Founded 2005 by Paul Sandip (NID alumnus, two Red Dot awards) and Suhasini Paul (NID postgraduate, toy designer) (Clutch, WEAVE 2022, PrintWeek). Pune per Clutch; some profiles list New Delhi" },
+            { name: "Lemon Design", what: "Branding, packaging, spaces and products", url: "https://lemondesign.co.in", loc: "Pune", src: "Founded 2001 by NID graduates Dipendra Baoni and Shalini Singh; NID furniture graduate Wasim Khan joined as co-founder (D'source)" },
+            { name: "Onio Design", what: "Design research and product development", url: "https://www.oniodesign.com", loc: "Pune", src: "Founded 1997 by IIT Bombay and NID alumni (Village and IndiaMART directory listings; not confirmed on the studio's own site)" } ] },
+        { id: "indep", label: "Other Indian studios",
           size: "Small", work: "Hardware and consumer product design", portfolio: "Making, prototyping, range",
           evidence: "Studio websites and design awards",
           companies: [
+            { name: "Tata Elxsi", url: "https://www.tataelxsi.com", loc: "Bengaluru", src: "Industrial and product design services; NID TAD project sponsor" },
             { name: "Analogy", url: "https://www.analogydesign.co", loc: "Bengaluru", src: "Industrial design studio, Bengaluru; India's Best Design Studio 2023 (DesignIndia)" },
             { name: "Icarus", url: "https://www.icarus.co.in", loc: "Bengaluru", src: "Icarus Design Pvt Ltd, Bengaluru: industrial design and branding" },
             { name: "Every Day Things (EDT)", src: "UNCONFIRMED. Added by Sandeep. Research found 'Everyday Design and Technology', a home appliance brand. Check which company is meant" } ] }
