@@ -64,7 +64,12 @@ header p{margin:6px 0 0;color:var(--ink-2);font-size:clamp(14px,1.1vw,18px)}
 #nav #next{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
 #nav #next:hover:not(:disabled){background:color-mix(in srgb,var(--primary) 90%,transparent)}
 #nav button:disabled{opacity:.5;cursor:default;box-shadow:none}
-#counter{font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:56px;text-align:center}
+#counter{font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:56px;text-align:center;white-space:nowrap}
+#jumpWrap{position:relative;display:inline-flex;align-items:center;height:40px;padding:0 10px;border-radius:var(--radius);cursor:pointer}
+#jumpWrap:hover{background:var(--accent)} #jumpWrap:hover #counter{color:var(--ink)}
+#counter::after{content:"";display:inline-block;width:6px;height:6px;margin:0 0 3px 8px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+#jump{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:14px}
+body.web #prev,body.web #next{display:none} body.web #jumpWrap{padding:0 14px}
 /* ============ TABS (shadcn Tabs) for region ============ */
 #region{display:none;margin-top:14px;pointer-events:auto;background:var(--tablist);border-radius:var(--radius);padding:3px;gap:2px;width:max-content}
 #region.on{display:inline-flex}
@@ -186,8 +191,9 @@ body.forest #forest .ft.bush{transform:none;transition:opacity .5s var(--d),tran
 <div id="forest" aria-label="Design is a forest: many career trees"></div>
 <header><h1 id="title"></h1><p id="subtitle"></p><div id="region" role="tablist" aria-label="Region"></div></header>
 <div id="legend"></div>
-<nav id="nav" aria-label="Slides"><button id="prev" aria-label="Previous step">‹ Back</button><span id="counter"></span><button id="next" aria-label="Next step">Next ›</button></nav>
+<nav id="nav" aria-label="Slides"><button id="prev" aria-label="Previous step">‹ Back</button><label id="jumpWrap" title="Jump to any slide"><span id="counter"></span><select id="jump" aria-label="Jump to slide"></select></label><button id="next" aria-label="Next step">Next ›</button></nav>
 <div id="controls">
+  <select id="mode" title="Web: the whole tree, click a branch for detail. Presentation: step through slides." aria-label="Mode"><option value="present">Presentation</option><option value="web">Web</option></select>
   <select id="dataset" title="Choose discipline"></select>
   <select id="style" title="Choose theme" aria-label="Theme"><option value="default">Default theme</option><option value="smooth">Theme 1 · Smooth</option></select>
   <button id="notesBtn" title="Presenter notes (P)">Notes</button>
@@ -201,6 +207,7 @@ body.forest #forest .ft.bush{transform:none;transition:opacity .5s var(--d),tran
 <div id="help"><div>
   <b>Presenting</b><br>
   <kbd>→</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd> next step &nbsp; <kbd>←</kbd> <kbd>PgUp</kbd> back<br>
+  Click the slide number to jump to any slide. <b>Web</b> mode (top right) shows the whole tree; click a branch for its close-up<br>
   <kbd>1</kbd>–<kbd>9</kbd> jump to branch &nbsp; <kbd>Home</kbd> start &nbsp; <kbd>End</kbd> forest (last slide)<br>
   Click a branch or box to zoom &nbsp; <kbd>Esc</kbd> zoom out<br>
   Scroll to zoom, drag to pan<br>
@@ -223,7 +230,7 @@ const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS,
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const rad = d => d * Math.PI / 180;
 
-const S = { trees: window.CAREER_TREES || [], tree: null, steps: [], step: 0, vb: null, home: null, zoomed: null, notesWin: null };
+const S = { mode: "present", grown: null, grownAt: 0, trees: window.CAREER_TREES || [], tree: null, steps: [], step: 0, vb: null, home: null, zoomed: null, notesWin: null };
 
 /* ---------- layout: pure function of data ---------- */
 // Sizing knobs. Widths follow the "sum of branches" rule: every company adds UNIT of thickness.
@@ -643,6 +650,8 @@ $("focus").addEventListener("click", () => zoomOut());
 /* ---------- steps ---------- */
 function buildSteps(tree) {
   const forest = { view: "forest", notes: "Close: Product Design is one tree in a forest of design disciplines. Skills, people and companies cross between them." };
+  // web mode: one page with the whole tree (it grows branch by branch once); close-ups open on click, not as slides
+  if (S.mode === "web") return [{ view: "web", notes: "Whole tree. Click any branch for its close-up." }, forest];
   if (tree.steps && tree.steps.length) return [{ view: "intro" }, ...tree.steps, forest];
   const s = [{ view: "intro", notes: tree.meta.notes || `Introduce the ${tree.meta.discipline} tree. ${tree.meta.disclaimer || ""}` }];
   tree.branches.forEach(b => { s.push({ branch: b.id, view: "reveal" }); s.push({ branch: b.id, view: "detail" }); });
@@ -763,7 +772,7 @@ function renderForest() {
 function revealedUpTo(i) {
   const set = new Set();
   S.steps.slice(0, i + 1).forEach(st => st.branch && set.add(st.branch));
-  if (["overview", "forest"].includes(S.steps[i].view)) S.tree.branches.forEach(b => set.add(b.id));
+  if (["overview", "forest", "web"].includes(S.steps[i].view)) S.tree.branches.forEach(b => set.add(b.id));
   return set;
 }
 function go(i) {
@@ -775,18 +784,56 @@ function go(i) {
     g.classList.toggle("off", !open.has(g.dataset.id));
     g.classList.toggle("dim", st.view === "reveal" && open.has(g.dataset.id) && g.dataset.id !== st.branch);
   });
+  if (st.view === "web") growAll();
   if (st.view === "detail") zoomTo(st.branch, null, true); else zoomOut(true);
   const fo = st.view === "forest";
   if (fo && !$("forest").firstChild) renderForest();
   document.body.classList.toggle("forest", fo);
   $("title").textContent = fo ? FOREST.title : S.tree.meta.title;
   $("subtitle").textContent = fo ? FOREST.subtitle : [S.tree.meta.subtitle, S.tree.meta.asOf].filter(Boolean).join(" · ");
-  $("counter").textContent = `${i + 1} / ${S.steps.length}`;
+  syncJump();
   $("prev").disabled = i === 0; $("next").disabled = i === S.steps.length - 1;
   updateNotes();
 }
 const branchById = id => S.tree.branches.find(b => b.id === id);
-function stepTitle(st) { if (!st) return "End"; if (st.view === "intro") return "Intro: " + S.tree.meta.discipline; if (st.view === "overview") return "Full tree"; if (st.view === "forest") return "Forest of design careers"; const b = branchById(st.branch); return (b ? b.label : st.branch) + (st.view === "detail" ? " (detail)" : ""); }
+// web mode: grow every branch one after another, the way the slides reveal them; once per tree (again if the page re-renders
+// in the first moments, e.g. when fonts finish loading), not on theme changes or coming back from a close-up
+function growAll() {
+  const key = S.trees.indexOf(S.tree), now = performance.now();
+  if (S.grown === key && now - S.grownAt > 1500) return;
+  if (S.grown !== key) S.grownAt = now; S.grown = key;
+  const gs = [...world.querySelectorAll(".g-branch")], order = S.tree.branches.map(b => b.id);
+  gs.forEach(g => g.classList.add("off")); void document.body.offsetHeight;
+  gs.forEach(g => { g.style.setProperty("--rd", (.3 + order.indexOf(g.dataset.id) * .6).toFixed(2) + "s"); g.classList.remove("off"); });
+}
+/* ---------- jump menu: every slide of every tree (presentation) or every close-up of every tree (web) ---------- */
+const treeName = t => t.meta.discipline + (S.trees.filter(x => x.meta.discipline === t.meta.discipline).length > 1 ? " · " + (t.meta.region || t.meta.id) : "");
+function fillJump() {
+  const web = S.mode === "web";
+  $("jump").innerHTML = S.trees.map((t, ti) => {
+    const steps = t === S.tree ? S.steps : buildSteps(t);
+    const opts = web ? [`<option value="${ti}:0">Whole tree</option>`, ...t.branches.map((b, bi) => `<option value="${ti}:b:${esc(b.id)}">${bi + 1}. ${esc(b.label)}</option>`)]
+      : steps.filter(st => st.view !== "forest").map((st, i) => `<option value="${ti}:${i}">${i + 1}. ${esc(stepTitle(st, t))}</option>`);
+    return `<optgroup label="${esc(treeName(t))}">${opts.join("")}</optgroup>`;
+  }).join("") + `<optgroup label="Close"><option value="${S.trees.indexOf(S.tree)}:${S.steps.length - 1}">${web ? "" : S.steps.length + ". "}Forest of design careers</option></optgroup>`;
+  syncJump();
+}
+function syncJump() {
+  const ti = S.trees.indexOf(S.tree), st = S.steps[S.step] || {}, j = $("jump");
+  if (S.mode === "web") {
+    const b = S.zoomed && branchById(S.zoomed);
+    j.value = b ? `${ti}:b:${b.id}` : `${ti}:${S.step}`;
+    $("counter").textContent = st.view === "forest" ? "Forest" : b ? b.label : "Whole tree";
+  } else { j.value = `${ti}:${S.step}`; $("counter").textContent = `${S.step + 1} / ${S.steps.length}`; }
+  // the forest is the same closing slide for every tree: keep the Close option pointing at this tree's last step
+  const last = j.querySelector('optgroup[label="Close"] option'); if (last) { last.value = `${ti}:${S.steps.length - 1}`; if (st.view === "forest") j.value = last.value; }
+}
+function jumpTo(v) {
+  const [ti, a, bid] = v.split(":");
+  if (S.trees[+ti] !== S.tree) useTree(S.trees[+ti]);
+  if (a === "b") { if (S.steps[S.step].view !== "web") go(0); zoomTo(bid); } else go(+a);
+}
+function stepTitle(st, tree = S.tree) { if (!st) return "End"; if (st.view === "intro") return "Intro: " + tree.meta.discipline; if (st.view === "overview" || st.view === "web") return "Full tree"; if (st.view === "forest") return "Forest of design careers"; const b = tree.branches.find(x => x.id === st.branch); return (b ? b.label : st.branch) + (st.view === "detail" ? " (detail)" : ""); }
 function stepNotes(st) { if (st.notes) return st.notes; const b = branchById(st.branch) || {}; return st.view === "detail" ? (b.detailNotes || b.notes || "") : (b.notes || b.summary || ""); }
 
 /* ---------- zoom / viewBox ---------- */
@@ -815,12 +862,12 @@ function zoomTo(bid, sid, fromStep) {
   const parts = gs.slice(1).map(g => sid ? g.querySelector(`.g-sub[data-id="${sid}"]`) : g.querySelector(".nodes")).filter(Boolean).map(x => x.getBBox());
   const x0 = Math.min(...parts.map(b => b.x)), y0 = Math.min(...parts.map(b => b.y)), x1 = Math.max(...parts.map(b => b.x + b.width)), y1 = Math.max(...parts.map(b => b.y + b.height));
   // no camera move: the tree stays still and fades, the close-up fades in
-  S.zoomed = bid; openPanel(bid, sid);
+  S.zoomed = bid; openPanel(bid, sid); syncJump();
   renderFocus(bid, sid); document.body.classList.add("focus");
 }
 function zoomOut(fromStep) {
   S.zoomed = null; $("panel").classList.remove("open"); document.body.classList.remove("focus"); $("focus").dataset.bid = "";
-  const st = S.steps[S.step];
+  const st = S.steps[S.step]; if (!st) return; syncJump();
   world.querySelectorAll(".g-branch").forEach(g => { g.classList.remove("subfocus", "zoomed");
     g.classList.toggle("dim", st.view === "reveal" && !g.classList.contains("off") && g.dataset.id !== st.branch); });
   animVB(S.home);
@@ -883,7 +930,7 @@ function alertish(msg) { $("counter").textContent = msg; }
 /* ---------- data loading ---------- */
 function useTree(tree) {
   if (!tree || !tree.branches) return alertish("Not a Career Tree data file");
-  S.tree = tree; S.steps = buildSteps(tree); fillDatasets(); fillRegions(); render(); go(0);
+  S.tree = tree; S.steps = buildSteps(tree); fillDatasets(); fillRegions(); fillJump(); render(); go(0);
 }
 /* disciplines in the dropdown; regions of the same discipline (e.g. India / Outside India) in the toggle under the title */
 const disciplines = () => [...new Set(S.trees.map(t => t.meta.discipline))];
@@ -909,6 +956,7 @@ function onKey(e) {
   else if (k === "Home") go(0);
   else if (k === "End") go(S.steps.length - 1);
   else if (k === "Escape") { $("help").classList.remove("open"); zoomOut(); }
+  else if (/^[1-9]$/.test(k) && S.mode === "web") { const b = S.tree.branches[+k - 1]; if (b) { if (S.steps[S.step].view !== "web") go(0); zoomTo(b.id); } }
   else if (/^[1-9]$/.test(k)) { const idx = S.steps.findIndex(s => s.branch === (S.tree.branches[+k - 1] || {}).id); if (idx >= 0) go(idx); }
   else if (k === "f" || k === "F") toggleFS();
   else if (k === "p" || k === "P") openNotes();
@@ -931,6 +979,17 @@ function setStyle(v, save) {
 { const q = new URLSearchParams(location.search).get("theme"); let v = q === "1" ? "smooth" : q === "0" ? "default" : null;
   if (!v) try { v = localStorage.getItem("ct-style"); } catch (e) {}
   setStyle(v || "default", false); }
+// mode switch: Presentation (slides, as before) or Web (whole tree, close-ups on click); remembered, or set with ?mode=web
+function setMode(v, save) {
+  if (!["present", "web"].includes(v)) v = "present";
+  S.mode = v; $("mode").value = v; document.body.classList.toggle("web", v === "web");
+  if (save) try { localStorage.setItem("ct-mode", v); } catch (e) {}
+}
+{ let v = new URLSearchParams(location.search).get("mode");
+  if (!v) try { v = localStorage.getItem("ct-mode"); } catch (e) {}
+  setMode(v, false); }
+$("mode").onchange = e => { e.target.blur(); setMode(e.target.value, true); S.grown = null; $("focus").innerHTML = ""; useTree(S.tree); };
+$("jump").onchange = e => { e.target.blur(); jumpTo(e.target.value); };
 $("style").onchange = e => { setStyle(e.target.value, true); e.target.blur(); redraw(); };
 document.addEventListener("keydown", onKey);
 // on-screen Back / Next: blur after click so Space or Enter on the keyboard never triggers a second step
