@@ -45,14 +45,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 :focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 50%,transparent)}
 #stage{position:fixed;inset:0;width:100%;height:100%;cursor:grab;touch-action:none;transition:opacity .6s}
 #stage.dragging{cursor:grabbing}
-header{position:fixed;left:32px;top:24px;pointer-events:none;z-index:2}
+header{position:fixed;left:32px;top:calc(24px + var(--hs,0px));transition:top .3s;pointer-events:none;z-index:2}
 header h1{font-weight:700;font-size:clamp(26px,2.5vw,42px);margin:0;letter-spacing:-.025em;line-height:1.15}
 header p{margin:6px 0 0;color:var(--ink-2);font-size:clamp(14px,1.1vw,18px)}
 #legend{position:fixed;left:32px;bottom:22px;display:flex;gap:20px;align-items:center;font-size:14px;color:var(--ink-2);z-index:2;flex-wrap:wrap;max-width:60vw}
 #legend .k{display:flex;align-items:center;gap:8px} #legend b{color:var(--ink);font-weight:600}
 #legend .disc{font-size:12px;width:100%}
 /* ============ BUTTONS (shadcn Button: outline, default) ============ */
-#controls{position:fixed;right:20px;top:18px;display:flex;gap:8px;z-index:4;transition:opacity .4s}
+#controls{position:fixed;right:20px;top:18px;display:flex;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100vw - 40px);gap:8px;z-index:4;transition:opacity .4s}
 #controls select,#controls button,#nav button{font:500 14px/1 var(--font);color:var(--ink);background:var(--panel);border:1px solid var(--line);
   border-radius:calc(var(--radius) - 2px);height:32px;padding:0 12px;cursor:pointer;box-shadow:var(--shadow-xs);transition:background .15s,color .15s,box-shadow .15s}
 #controls button.icon{width:32px;padding:0;display:inline-flex;align-items:center;justify-content:center}
@@ -154,9 +154,9 @@ svg text{font-family:var(--font);fill:var(--ink)}
 .g-sub{transition:opacity .4s} .subfocus .g-sub{opacity:.18} .subfocus .g-sub.on{opacity:1} .subfocus .g-sub:not(.on) .leaf-lbl{opacity:0}
 .trunk-lbl{font-size:92px;font-weight:700;letter-spacing:-.03em;fill:var(--ink)}
 body.focus #stage{opacity:0}
-#focus{position:fixed;left:24px;top:118px;width:calc(100vw - var(--pw,min(42vw,760px)) - 48px);height:calc(100% - 200px);opacity:0;pointer-events:none;transition:opacity .5s .2s;z-index:1}
+#focus{position:fixed;left:24px;top:calc(118px + var(--hs,0px));width:calc(100vw - var(--pw,min(42vw,760px)) - 48px);height:calc(100% - 200px - var(--hs,0px));opacity:0;pointer-events:none;transition:opacity .5s .2s;z-index:1}
 body.focus #focus{opacity:1;pointer-events:auto}
-body.has-region #focus{top:172px;height:calc(100% - 254px)}
+body.has-region #focus{top:calc(172px + var(--hs,0px));height:calc(100% - 254px - var(--hs,0px))}
 #focus text{font-family:var(--font);fill:var(--ink)}
 #focus .f-sub{transition:opacity .35s;cursor:pointer}
 #focus.subsel .f-sub{opacity:.18} #focus.subsel .f-sub.on{opacity:1}
@@ -176,7 +176,7 @@ body.has-region #focus{top:172px;height:calc(100% - 254px)}
 #drop{position:fixed;inset:0;display:none;place-items:center;font-size:24px;font-weight:600;background:rgba(0,0,0,.5);color:#fff;z-index:10}
 body.dragover #drop{display:grid}
 /* ============ FOREST: closing slide, illustration only (nothing in it is clickable) ============ */
-#forest{position:fixed;left:0;right:0;top:120px;bottom:72px;opacity:0;pointer-events:none;transition:opacity .6s;z-index:1}
+#forest{position:fixed;left:0;right:0;top:calc(120px + var(--hs,0px));bottom:72px;opacity:0;pointer-events:none;transition:opacity .6s;z-index:1}
 #forest svg{width:100%;height:100%;display:block}
 body.forest #forest{opacity:1;pointer-events:auto;cursor:default}
 body.forest #stage,body.forest #focus,body.forest #legend,body.forest #region{opacity:0!important;pointer-events:none!important}
@@ -574,7 +574,7 @@ function render() {
   $("legend").innerHTML = tree.meta.disclaimer ? `<span class="disc">${tree.meta.disclaimer}</span>` : "";
 
   const box = world.getBBox();
-  S.home = fitBox(box, 1, 0.015, document.body.classList.contains("has-region") ? 172 : 118, 64);
+  S.home = fitBox(box, 1, 0.015, (document.body.classList.contains("has-region") ? 172 : 118) + fitHead(), 64);
   setVB(S.home);
 }
 
@@ -800,6 +800,7 @@ function go(i) {
   document.body.classList.toggle("forest", fo);
   $("title").textContent = fo ? FOREST.title : S.tree.meta.title;
   $("subtitle").textContent = fo ? FOREST.subtitle : [S.tree.meta.subtitle, S.tree.meta.asOf].filter(Boolean).join(" · ");
+  fitHead();
   syncJump();
   $("prev").disabled = i === 0; $("next").disabled = i === S.steps.length - 1;
   updateNotes();
@@ -851,6 +852,13 @@ function fitBox(b, frac, padFrac, top = 0, bottom = 0) {
   const pw = b.width * (1 + padFrac * 2), ph = b.height * (1 + padFrac * 2);
   const s = Math.min(availW / pw, availH / ph), cx = b.x + b.width / 2, cy = b.y + b.height / 2;
   return { x: cx - (availW / 2) / s, y: cy - (top + availH / 2) / s, w: W / s, h: innerHeight / s };
+}
+// when the title would run under the top-right controls (narrow windows, long titles), drop the title, and everything
+// below it, to just under the controls; --hs is that shift (0 when they fit side by side)
+function fitHead() {
+  const root = document.documentElement, k = $("controls").getBoundingClientRect(), hd = document.querySelector("header").getBoundingClientRect();
+  const sh = hd.right > k.left - 20 ? Math.max(0, Math.ceil(k.bottom) + 16 - 24) : 0;
+  root.style.setProperty("--hs", sh + "px"); return sh;
 }
 function setVB(v) { S.vb = v; svg.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`); }
 let anim;
@@ -1010,7 +1018,7 @@ $("notesBtn").onclick = openNotes; $("themeBtn").onclick = toggleTheme; $("fsBtn
 $("helpBtn").onclick = () => $("help").classList.toggle("open"); $("help").onclick = () => $("help").classList.remove("open");
 document.querySelector("#panel .close").onclick = () => zoomOut();
 // keep the panel's top clear of the controls, however tall they get (they wrap on narrow windows)
-{ const ctl = $("controls"), fit = () => document.documentElement.style.setProperty("--ctlb", Math.ceil(ctl.getBoundingClientRect().bottom) + "px");
+{ const ctl = $("controls"), fit = () => { document.documentElement.style.setProperty("--ctlb", Math.ceil(ctl.getBoundingClientRect().bottom) + "px"); fitHead(); };
   fit(); addEventListener("resize", fit); if (window.ResizeObserver) new ResizeObserver(fit).observe(ctl); }
 // drag the panel's left edge to change its width; the close-up tree takes the rest
 { const grip = $("panelGrip"), root = document.documentElement, panel = $("panel");
